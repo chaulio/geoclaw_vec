@@ -21,7 +21,7 @@ PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS ?= 
+FFLAGS ?= -O2 -fopenmp -g -pg
 
 # ---------------------------------
 # package sources for this program:
@@ -29,6 +29,7 @@ FFLAGS ?=
 
 GEOLIB = $(CLAW)/geoclaw/src/2d/shallow
 include $(GEOLIB)/Makefile.geoclaw
+NEWCODE = ../src
 
 # ---------------------------------------
 # package sources specifically to exclude
@@ -39,6 +40,7 @@ include $(GEOLIB)/Makefile.geoclaw
 EXCLUDE_MODULES = \
 
 EXCLUDE_SOURCES = \
+  $(GEOLIB)/amr2.f90 \
 
 # ----------------------------------------
 # List of custom sources for this program:
@@ -46,11 +48,21 @@ EXCLUDE_SOURCES = \
 
 
 MODULES = \
+  $(NEWCODE)/statistics.f90 \
 
+# SOURCES = \
+#   $(CLAW)/riemann/src/rpn2_geoclaw.f \
+#   $(CLAW)/riemann/src/rpt2_geoclaw.f \
+#   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
+  
 SOURCES = \
-  $(CLAW)/riemann/src/rpn2_geoclaw.f \
+  $(NEWCODE)/rpn2_geoclaw.f \
+  $(NEWCODE)/amr2.f90 \
   $(CLAW)/riemann/src/rpt2_geoclaw.f \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
+  
+  
+  
 
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
