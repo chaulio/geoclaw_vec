@@ -8,6 +8,12 @@ CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
 # at the unix prompt.
 
 
+# Version control:
+VERSION?=2
+# 1 = original code
+# 2 = SOA 
+
+
 # Adjust these variables if desired:
 # ----------------------------------
 
@@ -21,7 +27,7 @@ PLOTDIR = _plots               # Directory for plots
 # Environment variable FC should be set to fortran compiler, e.g. gfortran
 
 # Compiler flags can be specified here or set as an environment variable
-FFLAGS ?= -O2 -fopenmp -g -pg
+FFLAGS ?= 
 
 # ---------------------------------
 # package sources for this program:
@@ -39,8 +45,11 @@ NEWCODE = ../src
 
 EXCLUDE_MODULES = \
 
+ifeq ($(VERSION),2)
 EXCLUDE_SOURCES = \
   $(GEOLIB)/amr2.f90 \
+
+endif
 
 # ----------------------------------------
 # List of custom sources for this program:
@@ -50,16 +59,22 @@ EXCLUDE_SOURCES = \
 MODULES = \
   $(NEWCODE)/statistics.f90 \
 
-# SOURCES = \
-#   $(CLAW)/riemann/src/rpn2_geoclaw.f \
-#   $(CLAW)/riemann/src/rpt2_geoclaw.f \
-#   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
-  
+ifeq ($(VERSION),1)
+SOURCES = \
+   $(CLAW)/riemann/src/rpn2_geoclaw.f \
+   $(CLAW)/riemann/src/rpt2_geoclaw.f \
+   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
+
+endif
+
+ifeq ($(VERSION),2)
 SOURCES = \
   $(NEWCODE)/rpn2_geoclaw.f \
   $(NEWCODE)/amr2.f90 \
   $(CLAW)/riemann/src/rpt2_geoclaw.f \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
+
+endif
   
   
   
