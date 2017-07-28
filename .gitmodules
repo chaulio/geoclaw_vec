@@ -1,0 +1,3 @@
+[submodule "thesis_benchmarks"]
+	path = thesis_benchmarks
+	url = https://github.com/malchera/thesis_benchmarks.git
