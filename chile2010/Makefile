@@ -35,6 +35,7 @@ FFLAGS ?=
 # ---------------------------------
 
 GEOLIB = $(CLAW)/geoclaw/src/2d/shallow
+AMRLIB = $(CLAW)/amrclaw/src/2d
 include $(GEOLIB)/Makefile.geoclaw
 NEWCODE = ../src
 
@@ -49,6 +50,15 @@ EXCLUDE_MODULES = \
 ifeq ($(VERSION),1)
 EXCLUDE_SOURCES = \
   $(GEOLIB)/amr2.f90 \
+
+endif
+ifeq ($(VERSION),2)
+EXCLUDE_SOURCES = \
+  $(GEOLIB)/amr2.f90 \
+  $(GEOLIB)/qad.f \
+  $(GEOLIB)/flux2fw.f \
+  $(GEOLIB)/step2.f \
+  $(AMRLIB)/inlinelimiter.f \
 
 endif
 
@@ -75,6 +85,20 @@ SOURCES = \
   $(NEWCODE)/timer/rpn2_geoclaw.f \
   $(NEWCODE)/timer/amr2.f90 \
   $(CLAW)/riemann/src/rpt2_geoclaw.f \
+  $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
+
+endif
+
+# structure of arrays
+ifeq ($(VERSION),2)
+SOURCES = \
+  $(NEWCODE)/soa/rpn2_geoclaw.f \
+  $(NEWCODE)/soa/rpt2_geoclaw.f \
+  $(NEWCODE)/soa/amr2.f90 \
+  $(NEWCODE)/soa/qad.f \
+  $(NEWCODE)/soa/flux2fw.f \
+  $(NEWCODE)/soa/step2.f \
+  $(NEWCODE)/soa/inlinelimiter.f \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
 
 endif
