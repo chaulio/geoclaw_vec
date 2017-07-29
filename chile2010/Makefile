@@ -9,8 +9,9 @@ CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
 
 
 # Version control:
-VERSION?=2
-# 1 = original code
+VERSION?=1
+# 0 = original code (without statistics)
+# 1 = original code (with statistics)
 # 2 = SOA 
 
 
@@ -45,7 +46,7 @@ NEWCODE = ../src
 
 EXCLUDE_MODULES = \
 
-ifeq ($(VERSION),2)
+ifeq ($(VERSION),1)
 EXCLUDE_SOURCES = \
   $(GEOLIB)/amr2.f90 \
 
@@ -59,7 +60,8 @@ endif
 MODULES = \
   $(NEWCODE)/statistics.f90 \
 
-ifeq ($(VERSION),1)
+# original code without statistics
+ifeq ($(VERSION),0)
 SOURCES = \
    $(CLAW)/riemann/src/rpn2_geoclaw.f \
    $(CLAW)/riemann/src/rpt2_geoclaw.f \
@@ -67,10 +69,11 @@ SOURCES = \
 
 endif
 
-ifeq ($(VERSION),2)
+# original code WITH statistics
+ifeq ($(VERSION),1)
 SOURCES = \
-  $(NEWCODE)/rpn2_geoclaw.f \
-  $(NEWCODE)/amr2.f90 \
+  $(NEWCODE)/timer/rpn2_geoclaw.f \
+  $(NEWCODE)/timer/amr2.f90 \
   $(CLAW)/riemann/src/rpt2_geoclaw.f \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
 
