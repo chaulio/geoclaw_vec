@@ -48,9 +48,9 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
     
     ! Scratch storage for Sweeps and Riemann problems
     real(kind=8) ::  q1d(1-mbc:maxm+mbc,meqn)
-    real(kind=8) :: aux1(maux,1-mbc:maxm+mbc)
-    real(kind=8) :: aux2(maux,1-mbc:maxm+mbc)
-    real(kind=8) :: aux3(maux,1-mbc:maxm+mbc)
+    real(kind=8) :: aux1(1-mbc:maxm+mbc,maux)
+    real(kind=8) :: aux2(1-mbc:maxm+mbc,maux)
+    real(kind=8) :: aux3(1-mbc:maxm+mbc,maux)
     real(kind=8) :: dtdx1d(1-mbc:maxm+mbc)
     real(kind=8) :: dtdy1d(1-mbc:maxm+mbc)
     
@@ -102,9 +102,13 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
         
         ! Copy aux array into slices
         if (maux > 0) then
-            aux1(:,1-mbc:mx+mbc) = aux(:,1-mbc:mx+mbc,j-1)
-            aux2(:,1-mbc:mx+mbc) = aux(:,1-mbc:mx+mbc,j  )
-            aux3(:,1-mbc:mx+mbc) = aux(:,1-mbc:mx+mbc,j+1)
+            do i = 1-mbc,mx+mbc
+                do m = 1,maux
+                    aux1(i,m) = aux(m,i,j-1)
+                    aux2(i,m) = aux(m,i,j  )
+                    aux3(i,m) = aux(m,i,j+1)
+                enddo
+            enddo
         endif
         
         ! Store value of j along the slice into common block
@@ -149,9 +153,13 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
 
         ! Copy aux slices
         if (maux .gt. 0)  then
-            aux1(:,1-mbc:my+mbc) = aux(:,i-1,1-mbc:my+mbc)
-            aux2(:,1-mbc:my+mbc) = aux(:,i,1-mbc:my+mbc)
-            aux3(:,1-mbc:my+mbc) = aux(:,i+1,1-mbc:my+mbc)
+            do j = 1-mbc, my+mbc
+                do m=1, maux
+                    aux1(j,m) = aux(m,i-1,j)
+                    aux2(j,m) = aux(m,i  ,j)
+                    aux3(j,m) = aux(m,i+1,j)
+                enddo
+            enddo
         endif
         
         ! Store the value of i along this slice in the common block

@@ -97,9 +97,9 @@ c---------------------last modified 1/04/05-----------------------------
       dimension  gaddm(meqn,1-mbc:maxm+mbc, 2)
       dimension  gaddp(meqn,1-mbc:maxm+mbc, 2)
       dimension  dtdx1d(1-mbc:maxm+mbc)
-      dimension  aux1(maux, 1-mbc:maxm+mbc)
-      dimension  aux2(maux, 1-mbc:maxm+mbc)
-      dimension  aux3(maux, 1-mbc:maxm+mbc)
+      dimension  aux1(1-mbc:maxm+mbc, maux)
+      dimension  aux2(1-mbc:maxm+mbc, maux)
+      dimension  aux3(1-mbc:maxm+mbc, maux)
 c
       dimension  s(mwaves, 1-mbc:maxm+mbc)
       dimension  fwave(meqn, mwaves, 1-mbc:maxm+mbc)
@@ -147,7 +147,7 @@ c   # Set fadd for the donor-cell upwind method (Godunov)
               if (ixy.eq.1) then
                    dxdc=earth_radius*deg2rad
               else  
-                  dxdc=earth_radius*cos(aux2(3,i))*deg2rad
+                  dxdc=earth_radius*cos(aux2(i,3))*deg2rad
 !                  if (ixy.eq.2) dxdc=earth_radius*cos(aux2(3,i))*deg2rad  !why test again
               endif
          else

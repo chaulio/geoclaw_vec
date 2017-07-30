@@ -19,9 +19,9 @@
       double precision  asdq(meqn,1-mbc:maxm+mbc)
       double precision  bmasdq(meqn,1-mbc:maxm+mbc)
       double precision  bpasdq(meqn,1-mbc:maxm+mbc)
-      double precision  aux1(maux,1-mbc:maxm+mbc)
-      double precision  aux2(maux,1-mbc:maxm+mbc)
-      double precision  aux3(maux,1-mbc:maxm+mbc)
+      double precision  aux1(1-mbc:maxm+mbc,maux)
+      double precision  aux2(1-mbc:maxm+mbc,maux)
+      double precision  aux3(1-mbc:maxm+mbc,maux)
 
       double precision  s(3)
       double precision  r(3,3)
@@ -86,16 +86,16 @@
 
 *      !check and see if cell that transverse waves are going in is high and dry
        if (imp.eq.1) then
-            eta = qr(i-1,1)  + aux2(1,i-1)
-            topo1 = aux1(1,i-1)
-            topo3 = aux3(1,i-1)
+            eta = qr(i-1,1)  + aux2(i-1,1)
+            topo1 = aux1(i-1,1)
+            topo3 = aux3(i-1,1)
 c            s1 = vl-sqrt(g*hl)
 c            s3 = vl+sqrt(g*hl)
 c            s2 = 0.5d0*(s1+s3)
        else
-            eta = ql(i,1) + aux2(1,i)
-            topo1 = aux1(1,i)
-            topo3 = aux3(1,i)
+            eta = ql(i,1) + aux2(i,1)
+            topo1 = aux1(i,1)
+            topo3 = aux3(i,1)
 c            s1 = vr-sqrt(g*hr)
 c            s3 = vr+sqrt(g*hr)
 c            s2 = 0.5d0*(s1+s3)
@@ -108,11 +108,11 @@ c            s2 = 0.5d0*(s1+s3)
             dxdcm = dxdcp
          else
             if (imp.eq.1) then
-               dxdcp = earth_radius*cos(aux3(3,i-1))*deg2rad
-               dxdcm = earth_radius*cos(aux1(3,i-1))*deg2rad
+               dxdcp = earth_radius*cos(aux3(i-1,3))*deg2rad
+               dxdcm = earth_radius*cos(aux1(i-1,3))*deg2rad
             else
-               dxdcp = earth_radius*cos(aux3(3,i))*deg2rad
-               dxdcm = earth_radius*cos(aux1(3,i))*deg2rad
+               dxdcp = earth_radius*cos(aux3(i,3))*deg2rad
+               dxdcm = earth_radius*cos(aux1(i,3))*deg2rad
             endif
          endif
       endif

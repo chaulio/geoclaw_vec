@@ -51,8 +51,8 @@ c
       double precision  qr(1-mbc:maxm+mbc, meqn)
       double precision  apdq(meqn,1-mbc:maxm+mbc)
       double precision  amdq(meqn,1-mbc:maxm+mbc)
-      double precision  auxl(maux,1-mbc:maxm+mbc)
-      double precision  auxr(maux,1-mbc:maxm+mbc)
+      double precision  auxl(1-mbc:maxm+mbc,maux)
+      double precision  auxr(1-mbc:maxm+mbc,maux)
 
       !local only
       integer m,i,mw,maxiter,mu,nv
@@ -122,11 +122,11 @@ c        !set normal direction
          hR = ql(i,1) 
          huL = qr(i-1,mu) 
          huR = ql(i,mu) 
-         bL = auxr(1,i-1)
-         bR = auxl(1,i)
+         bL = auxr(i-1,1)
+         bR = auxl(i,1)
          if (pressure_forcing) then
-             pL = auxr(pressure_index, i-1)
-             pR = auxl(pressure_index, i)
+             pL = auxr(i-1,pressure_index)
+             pR = auxl(i, pressure_index)
          end if
 
          hvL=qr(i-1,nv) 
@@ -255,7 +255,7 @@ c==========Capacity for mapping from latitude longitude to physical space====
           if (ixy.eq.1) then
              dxdc=(earth_radius*deg2rad)
           else
-             dxdc=earth_radius*cos(auxl(3,i))*deg2rad
+             dxdc=earth_radius*cos(auxl(i,3))*deg2rad
           endif
 
           do mw=1,mwaves

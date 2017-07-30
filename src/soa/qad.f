@@ -48,7 +48,7 @@ c  WARNING: auxl,auxr dimensioned at max possible, but used as if
 c  they were dimensioned as the real maux by max1dp1. Would be better
 c  of course to dimension by maux by max1dp1 but this wont work if maux=0
 c  So need to access using your own indexing into auxl,auxr.
-       iaddaux(iaux,i) = iaux + maux*(i-1)
+       iaddaux(iaux,i) = i + max1dp1*(iaux-1)
 
        data qprint/.false./
 c

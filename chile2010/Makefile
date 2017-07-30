@@ -9,7 +9,7 @@ CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
 
 
 # Version control:
-VERSION?=1
+VERSION?=2
 # 0 = original code (without statistics)
 # 1 = original code (with statistics)
 # 2 = SOA 
