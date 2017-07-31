@@ -83,8 +83,8 @@ endif
 ifeq ($(VERSION),1)
 SOURCES = \
   $(NEWCODE)/timer/rpn2_geoclaw.f \
+  $(NEWCODE)/timer/rpt2_geoclaw.f \
   $(NEWCODE)/timer/amr2.f90 \
-  $(CLAW)/riemann/src/rpt2_geoclaw.f \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
 
 endif
