@@ -1,4 +1,5 @@
 #!/bin/bash
+#@ environment = $machine ; $version ; $openmp
 #@ wall_clock_limit = 08:00:00
 #@ job_name = geoclaw
 #@ job_type = parallel
@@ -34,17 +35,22 @@ pwd
 cd $WORKDIR
 pwd
 
-for machine in mic host ; do
-	for version in 1 2 ; do
-		if [ "$machine" = "host" ]
-		then
-            device=$host-ib
-			#./xgeoclaw-$version.$machine > logs/log-$version.$machine
-		else
-            device=$host-mic0
-		fi
-		
-		mpiexec -host $device -n 1 ./xgeoclaw-$version.$machine | tee logs/log-$version.$machine
-		
-	done;
-done;
+
+if [ "$machine" = "host" ]
+then
+    device=$host-ib
+    export OMP_NUM_THREADS=16
+else
+    device=$host-mic0
+    export OMP_NUM_THREADS=240
+fi
+
+if [ "$openmp" = "no" ]
+then
+    threading=singlethread
+    export OMP_NUM_THREADS=1
+else
+    threading=multithread
+fi
+
+mpiexec -host $device -n 1 ./xgeoclaw-$version.$machine | tee logs/log-$version-$threading.$machine
