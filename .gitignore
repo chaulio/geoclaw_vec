@@ -1,0 +1,13 @@
+*/fort.*
+*.data
+*.o
+*.mod
+*~
+*.plots
+*_plots
+*.output
+*_output
+xgeoclaw
+*.pyc
+pyclaw.log
+gauge*.txt
