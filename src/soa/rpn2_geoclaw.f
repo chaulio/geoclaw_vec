@@ -1,3 +1,5 @@
+#define test
+
 c======================================================================
        subroutine rpn2(ixy,maxm,meqn,mwaves,maux,mbc,mx,
      &                 ql,qr,auxl,auxr,fwave,s,amdq,apdq)
@@ -65,6 +67,8 @@ c
       double precision s1m,s2m
       double precision hstar,hstartest,hstarHLL,sLtest,sRtest
       double precision tw,dxdc
+      
+      double precision sqrt_ghL, sqrt_ghR
 
       logical rare1,rare2
       call rpn2_start_timer()
@@ -72,6 +76,15 @@ c
       ! In case there is no pressure forcing
       pL = 0.d0
       pR = 0.d0
+      
+      !set normal direction
+      if (ixy.eq.1) then
+         mu=2
+         nv=3
+      else
+         mu=3
+         nv=2
+      endif
 
       !loop through Riemann problems at each grid cell
       do i=2-mbc,mx+mbc
@@ -89,15 +102,6 @@ c
                  fwave(2,mw,i)=0.d0
                  fwave(3,mw,i)=0.d0
          enddo
-
-c        !set normal direction
-         if (ixy.eq.1) then
-            mu=2
-            nv=3
-         else
-            mu=3
-            nv=2
-         endif
 
          !zero (small) negative values if they exist
          if (qr(i-1,1).lt.0.d0) then
@@ -197,12 +201,16 @@ c               bL=hstartest+bR
                bL=hR+bR
             endif
          endif
+         
+         ! pre-compute square roots
+         sqrt_ghL = sqrt(g*hL)
+         sqrt_ghR = sqrt(g*hR)
 
          !determine wave speeds
-         sL=uL-sqrt(g*hL) ! 1 wave speed of left state
-         sR=uR+sqrt(g*hR) ! 2 wave speed of right state
+         sL=uL-sqrt_ghL ! 1 wave speed of left state
+         sR=uR+sqrt_ghR ! 2 wave speed of right state
 
-         uhat=(sqrt(g*hL)*uL + sqrt(g*hR)*uR)/(sqrt(g*hR)+sqrt(g*hL)) ! Roe average
+         uhat=(sqrt_ghL*uL + sqrt_ghR*uR)/(sqrt_ghR+sqrt_ghL) ! Roe average
          chat=sqrt(g*0.5d0*(hR+hL)) ! Roe average
          sRoe1=uhat-chat ! Roe wave speed 1 wave
          sRoe2=uhat+chat ! Roe wave speed 2 wave

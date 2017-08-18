@@ -1,7 +1,7 @@
 WORKDIR=$HOME/geoclaw_vec/chile2010
 cd $WORKDIR
 
-flags="-O2 -fopenmp -ipo -align array64byte"
+flags="-O2 -fopenmp -align array64byte -fp-model=precise "
 export FC=mpiifort
 
 for version in 1 2 ; do
