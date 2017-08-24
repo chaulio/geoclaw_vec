@@ -99,7 +99,7 @@ SOURCES = \
   $(NEWCODE)/soa/flux2fw.f \
   $(NEWCODE)/soa/step2.f \
   $(NEWCODE)/soa/inlinelimiter.f \
-  $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
+  $(NEWCODE)/soa/geoclaw_riemann_utils.f \
 
 endif
   

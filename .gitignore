@@ -11,3 +11,4 @@ xgeoclaw
 *.pyc
 pyclaw.log
 gauge*.txt
+*.attr
