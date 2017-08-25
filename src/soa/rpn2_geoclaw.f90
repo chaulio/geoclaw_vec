@@ -1,30 +1,29 @@
 ! choose here how many Riemann Problems will
 ! be solved at once by the vectorized solver
-#define _SOLVER_CHUNK_SIZE 2
+#define _SOLVER_CHUNK_SIZE 8
 
-c======================================================================
-       subroutine rpn2(ixy,maxm,meqn,mwaves,maux,mbc,mx,
-     &                 ql,qr,auxl,auxr,fwave,s,amdq,apdq)
-c======================================================================
-c
-c Solves normal Riemann problems for the 2D SHALLOW WATER equations
-c     with topography:
-c     #        h_t + (hu)_x + (hv)_y = 0                           #
-c     #        (hu)_t + (hu^2 + 0.5gh^2)_x + (huv)_y = -ghb_x      #
-c     #        (hv)_t + (huv)_x + (hv^2 + 0.5gh^2)_y = -ghb_y      #
-
-c On input, ql contains the state vector at the left edge of each cell
-c     qr contains the state vector at the right edge of each cell
-c
-c This data is along a slice in the x-direction if ixy=1
-c     or the y-direction if ixy=2.
-
-c  Note that the i'th Riemann problem has left state qr(i-1,:)
-c     and right state ql(i,:)
-c  From the basic clawpack routines, this routine is called with
-c     ql = qr
-c
-c
+!======================================================================
+       subroutine rpn2(ixy,maxm,meqn,mwaves,maux,mbc,mx, &
+                      ql,qr,auxl,auxr,fwave,s,amdq,apdq)
+!======================================================================
+! 
+! Solves normal Riemann problems for the 2D SHALLOW WATER equations
+!     with topography:
+!     #        h_t + (hu)_x + (hv)_y = 0                           #
+!     #        (hu)_t + (hu^2 + 0.5gh^2)_x + (huv)_y = -ghb_x      #
+!     #        (hv)_t + (huv)_x + (hv^2 + 0.5gh^2)_y = -ghb_y      #
+! 
+! On input, ql contains the state vector at the left edge of each cell
+!    qr contains the state vector at the right edge of each cell
+!
+! This data is along a slice in the x-direction if ixy=1
+!     or the y-direction if ixy=2.
+!!  Note that the i'th Riemann problem has left state qr(i-1,:)
+!     and right state ql(i,:)
+!  From the basic clawpack routines, this routine is called with
+!     ql = qr
+!
+!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !                                                                           !
 !      # This Riemann solver is for the shallow water equations.            !
@@ -155,7 +154,7 @@ c
 
      
      
-c==========Capacity for mapping from latitude longitude to physical space====
+!==========Capacity for mapping from latitude longitude to physical space====
         if (mcapa.gt.0) then
          do i=2-mbc,mx+mbc
           if (ixy.eq.1) then
@@ -165,10 +164,10 @@ c==========Capacity for mapping from latitude longitude to physical space====
           endif
 
           do mw=1,mwaves
-c             if (s(mw,i) .gt. 316.d0) then
-c               # shouldn't happen unless h > 10 km!
-c                write(6,*) 'speed > 316: i,mw,s(mw,i): ',i,mw,s(mw,i)
-c                endif
+!             if (s(mw,i) .gt. 316.d0) then
+!               # shouldn't happen unless h > 10 km!
+!                write(6,*) 'speed > 316: i,mw,s(mw,i): ',i,mw,s(mw,i)
+!                endif
                s(mw,i)=dxdc*s(mw,i)
                fwave(1,mw,i)=dxdc*fwave(1,mw,i)
                fwave(2,mw,i)=dxdc*fwave(2,mw,i)
@@ -177,10 +176,10 @@ c                endif
          enddo
         endif
 
-c===============================================================================
+!===============================================================================
 
 
-c============= compute fluctuations=============================================
+!============= compute fluctuations=============================================
          amdq(1:3,:) = 0.d0
          apdq(1:3,:) = 0.d0
          do i=2-mbc,mx+mbc
@@ -277,8 +276,8 @@ c============= compute fluctuations=============================================
          
          do i=1, _SOLVER_CHUNK_SIZE !TODO: vectorize this part with riemanntype subroutine...
             if (hR(i).le.drytol) then
-                call riemanntype(hL(i),hL(i),uL(i),-uL(i),hstar(i),
-     &                  s1m(i),s2m(i),rare1(i),rare2(i),1,drytol,g)
+                call riemanntype(hL(i),hL(i),uL(i),-uL(i),hstar(i), &
+                       s1m(i),s2m(i),rare1(i),rare2(i),1,drytol,g)
                 hstartest(i)=max(hL(i),hstar(i))
                 if (hstartest(i)+bL(i).lt.bR(i)) then !right state should become ghost values that mirror left for wall problem
                     !bR=hstartest+bL
@@ -294,8 +293,8 @@ c============= compute fluctuations=============================================
                     bR(i)=hL(i)+bL(i)
                 endif
             elseif (hL(i).le.drytol) then ! right surface is lower than left topo
-                call riemanntype(hR(i),hR(i),-uR(i),uR(i),hstar(i),
-     &                    s1m(i),s2m(i),rare1(i),rare2(i),1,drytol,g)
+                call riemanntype(hR(i),hR(i),-uR(i),uR(i),hstar(i), &
+                         s1m(i),s2m(i),rare1(i),rare2(i),1,drytol,g)
                 hstartest(i)=max(hR(i),hstar(i))
                 if (hstartest(i)+bR(i).lt.bL(i)) then  !left state should become ghost values that mirror right
                     !bL(i)=hstartest(i)+bR(i)
@@ -335,19 +334,19 @@ c============= compute fluctuations=============================================
          maxiter = 1
          
          ! using vectorized version of this solver!
-           call riemann_aug_JCP(maxiter,3,3,hL,hR,huL,
-     &        huR,hvL,hvR,bL,bR,uL,uR,vL,vR,phiL,phiR,
-     &               pL,pR,sE1,sE2,drytol,g,rho,sw,fw)
+           call riemann_aug_JCP(maxiter,3,3,hL,hR,huL,&
+             huR,hvL,hvR,bL,bR,uL,uR,vL,vR,phiL,phiR,&
+                    pL,pR,sE1,sE2,drytol,g,rho,sw,fw)
 
-C          call riemann_ssqfwave(maxiter,meqn,mwaves,hL,hR,huL,huR,
-C      &     hvL,hvR,bL,bR,uL,uR,vL,vR,phiL,phiR,pL,pR,sE1,sE2,drytol,g,
-C      &     rho,sw,fw)
-
-C          call riemann_fwave(meqn,mwaves,hL,hR,huL,huR,hvL,hvR,
-C      &      bL,bR,uL,uR,vL,vR,phiL,phiR,pL,pR,sE1,sE2,drytol,g,rho,sw,
-C      &      fw)
-
-c        !eliminate ghost fluxes for wall
+!          call riemann_ssqfwave(maxiter,meqn,mwaves,hL,hR,huL,huR,
+!      &     hvL,hvR,bL,bR,uL,uR,vL,vR,phiL,phiR,pL,pR,sE1,sE2,drytol,g,
+!      &     rho,sw,fw)
+!
+!          call riemann_fwave(meqn,mwaves,hL,hR,huL,huR,hvL,hvR,
+!      &      bL,bR,uL,uR,vL,vR,phiL,phiR,pL,pR,sE1,sE2,drytol,g,rho,sw,
+!      &      fw)
+! 
+!        !eliminate ghost fluxes for wall
          do mw=1,3
             sw(:,mw)=sw(:,mw)*wall(:,mw)
 
@@ -360,10 +359,10 @@ c        !eliminate ghost fluxes for wall
       
 ! this subroutine has been moved from geoclaw_riemann_utils.f to here
 ! and adpted: now it solves "_SOLVER_CHUNK_SIZE" problems.
-c-----------------------------------------------------------------------
-      subroutine riemann_aug_JCP(maxiter,meqn,mwaves,hL,hR,huL,huR,
-     &   hvL,hvR,bL,bR,uL,uR,vL,vR,phiL,phiR,pL,pR,sE1,sE2,drytol,
-     &   g,rho,sw,fw)
+!-----------------------------------------------------------------------
+      subroutine riemann_aug_JCP(maxiter,meqn,mwaves,hL,hR,huL,huR,&
+        hvL,hvR,bL,bR,uL,uR,vL,vR,phiL,phiR,pL,pR,sE1,sE2,drytol,&
+        g,rho,sw,fw)
 
       ! solve shallow water equations given single left and right states
       ! This solver is described in J. Comput. Phys. (6): 3089-3113, March 2008
@@ -431,8 +430,8 @@ c-----------------------------------------------------------------------
       delnorm = delh**2 + delphi**2
 
       do i=1,_SOLVER_CHUNK_SIZE
-        call riemanntype(hL(i),hR(i),uL(i),uR(i),
-     &          hm(i),s1m(i),s2m(i),rare1(i),rare2(i),1,drytol,g)
+        call riemanntype(hL(i),hR(i),uL(i),uR(i),&
+               hm(i),s1m(i),s2m(i),rare1(i),rare2(i),1,drytol,g)
       end do
 
       lambda(:,1)= min(sE1,s2m) !Modified Einfeldt speed
@@ -444,7 +443,7 @@ c-----------------------------------------------------------------------
       
       hstarHLL = max((huL-huR+sE2*hR-sE1*hL)/(sE2-sE1),0.d0) ! middle state in an HLL solve
 
-c     !determine the middle entropy corrector wave------------------------
+      !determine the middle entropy corrector wave------------------------
       rarecorrectortest=.false.
       rarecorrector=.false.
       where (rarecorrectortest) 
@@ -457,8 +456,8 @@ c     !determine the middle entropy corrector wave------------------------
             !see which rarefaction is larger
             rare1st=3.d0*(sqrt(g*hL)-sqrt(g*hm))
             rare2st=3.d0*(sqrt(g*hR)-sqrt(g*hm))
-            where (max(rare1st,rare2st).gt.raremin*sdelta.and.
-     &         max(rare1st,rare2st).lt.raremax*sdelta) 
+            where (max(rare1st,rare2st).gt.raremin*sdelta.and. &
+              max(rare1st,rare2st).lt.raremax*sdelta) 
                   rarecorrector=.true.
                where (rare1st.gt.rare2st) 
                   lambda(:,2)=s1m
@@ -472,7 +471,7 @@ c     !determine the middle entropy corrector wave------------------------
          where (hstarHLL.lt.min(hL,hR)/5.d0) rarecorrector=.false.
       end where
 
-c     ## Is this correct 2-wave when rarecorrector == .true. ??
+      ! ## Is this correct 2-wave when rarecorrector == .true. ??
       do mw=1,mwaves
          r(:,1,mw)=1.d0
          r(:,2,mw)=lambda(:,mw)
@@ -480,15 +479,15 @@ c     ## Is this correct 2-wave when rarecorrector == .true. ??
       enddo
       where (.not.rarecorrector)
          lambda(:,2) = 0.5d0*(lambda(:,1)+lambda(:,3))
-c         lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
+         !lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
          r(:,1,2)=0.d0
          r(:,2,2)=0.d0
          r(:,3,2)=1.d0
       end where
-c     !---------------------------------------------------
+      !---------------------------------------------------
 
 
-c     !determine the steady state wave -------------------
+      !determine the steady state wave -------------------
       !criticaltol = 1.d-6
       ! MODIFIED:
       criticaltol = max(drytol*g, 1d-6)
@@ -496,7 +495,7 @@ c     !determine the steady state wave -------------------
       deldelh = -delb
       deldelphi = -0.5d0 * (hR + hL) * (g * delb + delp / rho)
 
-c     !determine a few quanitites needed for steady state wave if iterated
+      !determine a few quanitites needed for steady state wave if iterated
       hLstar=hL
       hRstar=hR
       uLstar=uL
@@ -517,7 +516,7 @@ c     !determine a few quanitites needed for steady state wave if iterated
             huLstar=uLstar*hLstar
             huRstar=uRstar*hRstar
             lambda(:,2) = 0.5d0*(lambda(:,1)+lambda(:,3))
-c           lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
+            !lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
             r(:,1,2)=0.d0
             r(:,2,2)=0.d0
             r(:,3,2)=1.d0
@@ -527,7 +526,7 @@ c           lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
          s1s2bar = 0.25d0*(uLstar+uRstar)**2 - g*hbar
          s1s2tilde= max(0.d0,uLstar*uRstar) - g*hbar
 
-c        !find if sonic problem
+         !find if sonic problem
          ! MODIFIED from 5.3.1 version
          ! TODO: try the one-line-solution for this - see Samoa/SWE/SWE_Patch_solvers.f90 lines 427 and 428
          sonic = .false.
@@ -549,13 +548,13 @@ c        !find if sonic problem
             sonic = .true.
          end where
 
-c        !find jump in h, deldelh
+         !find jump in h, deldelh
          where (sonic)
             deldelh =  -delb
          elsewhere
             deldelh = delb*g*hbar/s1s2bar
          end where
-c        !find bounds in case of critical state resonance, or negative states
+         !find bounds in case of critical state resonance, or negative states
          where (sE1.lt.-criticaltol.and.sE2.gt.criticaltol) 
             deldelh = min(deldelh,hstarHLL*(sE2-sE1)/sE2)
             deldelh = max(deldelh,hstarHLL*(sE2-sE1)/sE1)
@@ -567,13 +566,13 @@ c        !find bounds in case of critical state resonance, or negative states
             deldelh = max(deldelh,hstarHLL*(sE2-sE1)/sE2)
          end where
 
-c        !find jump in phi, deldelphi
+         !find jump in phi, deldelphi
          where (sonic) 
             deldelphi = -g*hbar*delb
          elsewhere
             deldelphi = -delb*g*hbar*s1s2tilde/s1s2bar
          end where
-c        !find bounds in case of critical state resonance, or negative states
+         !find bounds in case of critical state resonance, or negative states
          deldelphi=min(deldelphi,g*max(-hLstar*delb,-hRstar*delb))
          deldelphi=max(deldelphi,g*min(-hLstar*delb,-hRstar*delb))
          deldelphi = deldelphi - hbar * delp / rho
@@ -582,13 +581,13 @@ c        !find bounds in case of critical state resonance, or negative states
          del(:,2)=delhu
          del(:,3)=delphi-deldelphi
 
-c        !Determine determinant of eigenvector matrix========
+         !Determine determinant of eigenvector matrix========
          det1=r(:,1,1)*(r(:,2,2)*r(:,3,3)-r(:,2,3)*r(:,3,2))
          det2=r(:,1,2)*(r(:,2,1)*r(:,3,3)-r(:,2,3)*r(:,3,1))
          det3=r(:,1,3)*(r(:,2,1)*r(:,3,2)-r(:,2,2)*r(:,3,1))
          determinant=det1-det2+det3
 
-c        !solve for beta(k) using Cramers Rule=================
+         !solve for beta(k) using Cramers Rule=================
          do k=1,3
             do mw=1,3
                   A(:,1,mw)=r(:,1,mw)
@@ -657,11 +656,11 @@ c        !solve for beta(k) using Cramers Rule=================
  
       hustar_interface = huL + fw(:,1,1)   ! = huR - fw(:,1,3)
       where (hustar_interface <= 0.0d0)
-          fw(:,3,1) = fw(:,3,1) + (hR*uR*vR - hL*uL*vL - 
-     &                        fw(:,3,1)- fw(:,3,3))
+          fw(:,3,1) = fw(:,3,1) + (hR*uR*vR - hL*uL*vL - &
+                             fw(:,3,1)- fw(:,3,3))
       else where
-          fw(:,3,3) = fw(:,3,3) + (hR*uR*vR - hL*uL*vL - 
-     &                        fw(:,3,1)- fw(:,3,3))
+          fw(:,3,3) = fw(:,3,3) + (hR*uR*vR - hL*uL*vL - &
+                             fw(:,3,1)- fw(:,3,3))
       end where
 
       
