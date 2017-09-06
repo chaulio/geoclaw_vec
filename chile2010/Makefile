@@ -61,6 +61,15 @@ EXCLUDE_SOURCES = \
   $(AMRLIB)/inlinelimiter.f \
 
 endif
+ifeq ($(VERSION),3)
+EXCLUDE_SOURCES = \
+  $(GEOLIB)/amr2.f90 \
+  $(GEOLIB)/qad.f \
+  $(GEOLIB)/flux2fw.f \
+  $(GEOLIB)/step2.f \
+  $(AMRLIB)/inlinelimiter.f \
+
+endif
 
 # ----------------------------------------
 # List of custom sources for this program:
@@ -89,7 +98,7 @@ SOURCES = \
 
 endif
 
-# structure of arrays
+# structure of arrays + vectorization (vec solver)
 ifeq ($(VERSION),2)
 SOURCES = \
   $(NEWCODE)/soa/rpn2_geoclaw.f \
@@ -103,7 +112,22 @@ SOURCES = \
 
 endif
   
+# structure of arrays + vectorization (pragmas)
+ifeq ($(VERSION),3)
+SOURCES = \
+  $(NEWCODE)/malcher/rpn2_geoclaw.f90 \
+  $(NEWCODE)/malcher/riemann_step_sl.f90 \
+  $(NEWCODE)/soa/rpt2_geoclaw.f \
+  $(NEWCODE)/soa/amr2.f90 \
+  $(NEWCODE)/soa/qad.f \
+  $(NEWCODE)/soa/flux2fw.f \
+  $(NEWCODE)/soa/step2.f \
+  $(NEWCODE)/soa/inlinelimiter.f \
+  $(NEWCODE)/malcher/riemann_utils.f \
+
+endif
   
+
   
 
 #-------------------------------------------------------------------
