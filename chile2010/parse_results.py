@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #---  CONFIG  ----
-list_versions="1 2"
+list_versions="1 2 3"
 list_threading="singlethread multithread"
 list_machines="host mic"
 #-----------------

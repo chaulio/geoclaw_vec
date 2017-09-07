@@ -1,6 +1,6 @@
 for machine in mic host ; do
-	for version in 1 2 ; do
-        for openmp in yes no ; do 
+	for version in 1 2 3 ; do
+        for openmp in no ; do 
 	
             export machine
             export version
