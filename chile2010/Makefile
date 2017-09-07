@@ -115,15 +115,14 @@ endif
 # structure of arrays + vectorization (pragmas)
 ifeq ($(VERSION),3)
 SOURCES = \
-  $(NEWCODE)/malcher/rpn2_geoclaw.f90 \
-  $(NEWCODE)/malcher/riemann_step_sl.f90 \
+  $(NEWCODE)/pragmas/rpn2_geoclaw.f90 \
   $(NEWCODE)/soa/rpt2_geoclaw.f \
   $(NEWCODE)/soa/amr2.f90 \
   $(NEWCODE)/soa/qad.f \
   $(NEWCODE)/soa/flux2fw.f \
   $(NEWCODE)/soa/step2.f \
   $(NEWCODE)/soa/inlinelimiter.f \
-  $(NEWCODE)/malcher/riemann_utils.f \
+  $(NEWCODE)/pragmas/geoclaw_riemann_utils.f \
 
 endif
   
