@@ -47,12 +47,12 @@ c
 
       double precision  fwave(meqn, mwaves, 1-mbc:maxm+mbc)
       double precision  s(mwaves, 1-mbc:maxm+mbc)
-      double precision  ql(meqn, 1-mbc:maxm+mbc)
-      double precision  qr(meqn, 1-mbc:maxm+mbc)
+      double precision  ql(1-mbc:maxm+mbc, meqn)
+      double precision  qr(1-mbc:maxm+mbc, meqn)
       double precision  apdq(meqn,1-mbc:maxm+mbc)
       double precision  amdq(meqn,1-mbc:maxm+mbc)
-      double precision  auxl(maux,1-mbc:maxm+mbc)
-      double precision  auxr(maux,1-mbc:maxm+mbc)
+      double precision  auxl(1-mbc:maxm+mbc,maux)
+      double precision  auxr(1-mbc:maxm+mbc,maux)
 
       !local only
       integer m,i,mw,maxiter,mu,nv
@@ -65,6 +65,8 @@ c
       double precision s1m,s2m
       double precision hstar,hstartest,hstarHLL,sLtest,sRtest
       double precision tw,dxdc
+      
+      double precision sqrt_ghL, sqrt_ghR
 
       logical rare1,rare2
       call rpn2_start_timer()
@@ -72,14 +74,23 @@ c
       ! In case there is no pressure forcing
       pL = 0.d0
       pR = 0.d0
+      
+      !set normal direction
+      if (ixy.eq.1) then
+         mu=2
+         nv=3
+      else
+         mu=3
+         nv=2
+      endif
 
       !loop through Riemann problems at each grid cell
       do i=2-mbc,mx+mbc
 
 !-----------------------Initializing-----------------------------------
          !inform of a bad riemann problem from the start
-         if((qr(1,i-1).lt.0.d0).or.(ql(1,i) .lt. 0.d0)) then
-            write(*,*) 'Negative input: hl,hr,i=',qr(1,i-1),ql(1,i),i
+         if((qr(i-1,1).lt.0.d0).or.(ql(i,1) .lt. 0.d0)) then
+            write(*,*) 'Negative input: hl,hr,i=',qr(i-1,1),ql(i,1),i
          endif
 
          !Initialize Riemann problem for grid interface
@@ -90,47 +101,38 @@ c
                  fwave(3,mw,i)=0.d0
          enddo
 
-c        !set normal direction
-         if (ixy.eq.1) then
-            mu=2
-            nv=3
-         else
-            mu=3
-            nv=2
-         endif
-
          !zero (small) negative values if they exist
-         if (qr(1,i-1).lt.0.d0) then
-               qr(1,i-1)=0.d0
-               qr(2,i-1)=0.d0
-               qr(3,i-1)=0.d0
+         if (qr(i-1,1).lt.0.d0) then
+               qr(i-1,1)=0.d0
+               qr(i-1,2)=0.d0
+               qr(i-1,3)=0.d0
          endif
 
-         if (ql(1,i).lt.0.d0) then
-               ql(1,i)=0.d0
-               ql(2,i)=0.d0
-               ql(3,i)=0.d0
+         if (ql(i,1).lt.0.d0) then
+               ql(i,1)=0.d0
+               ql(i,2)=0.d0
+               ql(i,3)=0.d0
          endif
 
          !skip problem if in a completely dry area
-         if (qr(1,i-1) <= drytol .and. ql(1,i) <= drytol) then
+         if (qr(i-1,1) <= drytol .and. ql(i,1) <= drytol) then
             go to 30
          endif
 
          !Riemann problem variables
-         hL = qr(1,i-1) 
-         hR = ql(1,i) 
-         huL = qr(mu,i-1) 
-         huR = ql(mu,i) 
-         bL = auxr(1,i-1)
-         bR = auxl(1,i)
+         hL = qr(i-1,1) 
+         hR = ql(i,1) 
+         huL = qr(i-1,mu) 
+         huR = ql(i,mu) 
+         bL = auxr(i-1,1)
+         bR = auxl(i,1)
          if (pressure_forcing) then
-             pL = auxr(pressure_index, i-1)
-             pR = auxl(pressure_index, i)
+             pL = auxr(i-1,pressure_index)
+             pR = auxl(i, pressure_index)
          end if
 
-         hvL=qr(nv,i-1) 
-         hvR=ql(nv,i)
+         hvL=qr(i-1,nv) 
+         hvR=ql(i,nv)
 
          !check for wet/dry boundary
          if (hR.gt.drytol) then
@@ -197,12 +199,16 @@ c               bL=hstartest+bR
                bL=hR+bR
             endif
          endif
+         
+         ! pre-compute square roots
+         sqrt_ghL = sqrt(g*hL)
+         sqrt_ghR = sqrt(g*hR)
 
          !determine wave speeds
-         sL=uL-sqrt(g*hL) ! 1 wave speed of left state
-         sR=uR+sqrt(g*hR) ! 2 wave speed of right state
+         sL=uL-sqrt_ghL ! 1 wave speed of left state
+         sR=uR+sqrt_ghR ! 2 wave speed of right state
 
-         uhat=(sqrt(g*hL)*uL + sqrt(g*hR)*uR)/(sqrt(g*hR)+sqrt(g*hL)) ! Roe average
+         uhat=(sqrt_ghL*uL + sqrt_ghR*uR)/(sqrt_ghR+sqrt_ghL) ! Roe average
          chat=sqrt(g*0.5d0*(hR+hL)) ! Roe average
          sRoe1=uhat-chat ! Roe wave speed 1 wave
          sRoe2=uhat+chat ! Roe wave speed 2 wave
@@ -255,7 +261,7 @@ c==========Capacity for mapping from latitude longitude to physical space====
           if (ixy.eq.1) then
              dxdc=(earth_radius*deg2rad)
           else
-             dxdc=earth_radius*cos(auxl(3,i))*deg2rad
+             dxdc=earth_radius*cos(auxl(i,3))*deg2rad
           endif
 
           do mw=1,mwaves
