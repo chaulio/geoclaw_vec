@@ -247,8 +247,18 @@
          ! (these problems could have been skipped, but to allow 
          ! vectorization they weren't)
          if (hL < drytol .and. hR < drytol) then
-            fw = 0.0d0
-            sw = 0.0d0
+            sw(1) = 0.0d0
+            sw(2) = 0.0d0
+            sw(3) = 0.0d0
+            fw(1,1) = 0.0d0
+            fw(2,1) = 0.0d0
+            fw(3,1) = 0.0d0
+            fw(1,2) = 0.0d0
+            fw(2,2) = 0.0d0
+            fw(3,2) = 0.0d0
+            fw(1,3) = 0.0d0
+            fw(2,3) = 0.0d0
+            fw(3,3) = 0.0d0            
          endif
 
 
