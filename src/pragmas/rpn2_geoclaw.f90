@@ -89,17 +89,18 @@
 
 !-----------------------Initializing-----------------------------------
          !inform of a bad riemann problem from the start
-         if((qr(i-1,1).lt.0.d0).or.(ql(i,1) .lt. 0.d0)) then
-            write(*,*) 'Negative input: hl,hr,i=',qr(i-1,1),ql(i,1),i
-         endif
+!          if((qr(i-1,1).lt.0.d0).or.(ql(i,1) .lt. 0.d0)) then
+!             write(*,*) 'Negative input: hl,hr,i=',qr(i-1,1),ql(i,1),i
+!          endif
 
-         !Initialize Riemann problem for grid interface
-         do mw=1,mwaves
-              s(mw,i)=0.d0
-                 fwave(1,mw,i)=0.d0
-                 fwave(2,mw,i)=0.d0
-                 fwave(3,mw,i)=0.d0
-         enddo
+         !Initialize Riemann problem for grid interface -> not necessary, they are always computed by the solver
+!          do mw=1,mwaves
+!               s(mw,i)=0.d0
+!                  fwave(1,mw,i)=0.d0
+!                  fwave(2,mw,i)=0.d0
+!                  fwave(3,mw,i)=0.d0
+!          enddo
+        
 
          !zero (small) negative values if they exist
          if (qr(i-1,1).lt.0.d0) then
@@ -252,27 +253,54 @@
 
 
 !        !eliminate ghost fluxes for wall
-         do mw=1,3
-            sw(mw)=sw(mw)*wall(mw)
+!          do mw=1,3
+!             sw(mw)=sw(mw)*wall(mw)
+! 
+!                fw(1,mw)=fw(1,mw)*wall(mw) 
+!                fw(2,mw)=fw(2,mw)*wall(mw)
+!                fw(3,mw)=fw(3,mw)*wall(mw)
+!          enddo
+          ! unrolling... mw=1
+          sw(1)=sw(1)*wall(1)
+          fw(1,1)=fw(1,1)*wall(1) 
+          fw(2,1)=fw(2,1)*wall(1)
+          fw(3,1)=fw(3,1)*wall(1)
+          ! unrolling... mw=2
+          sw(2)=sw(2)*wall(2)
+          fw(1,2)=fw(1,2)*wall(2) 
+          fw(2,2)=fw(2,2)*wall(2)
+          fw(3,2)=fw(3,2)*wall(2)
+          ! unrolling... mw=3
+          sw(3)=sw(3)*wall(3)
+          fw(1,3)=fw(1,3)*wall(3) 
+          fw(2,3)=fw(2,3)*wall(3)
+          fw(3,3)=fw(3,3)*wall(3)
 
-               fw(1,mw)=fw(1,mw)*wall(mw) 
-               fw(2,mw)=fw(2,mw)*wall(mw)
-               fw(3,mw)=fw(3,mw)*wall(mw)
-         enddo
+
+!          do mw=1,mwaves
+!             s(mw,i)=sw(mw)
+!             fwave(1,mw,i)=fw(1,mw)
+!             fwave(mu,mw,i)=fw(2,mw)
+!             fwave(nv,mw,i)=fw(3,mw)
+! !            write(51,515) sw(mw),fw(1,mw),fw(2,mw),fw(3,mw)
+! !515         format("++sw",4e25.16)
+!          enddo
          
-!           if (hL <= drytol .and. hR <= drytol) then
-!              sw=0
-!              fw=0
-!           endif
-
-         do mw=1,mwaves
-            s(mw,i)=sw(mw)
-            fwave(1,mw,i)=fw(1,mw)
-            fwave(mu,mw,i)=fw(2,mw)
-            fwave(nv,mw,i)=fw(3,mw)
-!            write(51,515) sw(mw),fw(1,mw),fw(2,mw),fw(3,mw)
-!515         format("++sw",4e25.16)
-         enddo
+         ! unrolling... mw=1
+         s(1,i)=sw(1)
+         fwave(1,1,i)=fw(1,1)
+         fwave(mu,1,i)=fw(2,1)
+         fwave(nv,1,i)=fw(3,1)
+         ! unrolling... mw=2
+         s(2,i)=sw(2)
+         fwave(1,2,i)=fw(1,2)
+         fwave(mu,2,i)=fw(2,2)
+         fwave(nv,2,i)=fw(3,2)
+         ! unrolling... mw=3
+         s(3,i)=sw(3)
+         fwave(1,3,i)=fw(1,3)
+         fwave(mu,3,i)=fw(2,3)
+         fwave(nv,3,i)=fw(3,3)
 
       enddo
 
