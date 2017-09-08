@@ -2,6 +2,8 @@
       subroutine riemann_aug_JCP(maxiter,meqn,mwaves,hL,hR,huL,huR, &
         hvL,hvR,bL,bR,uL,uR,vL,vR,phiL,phiR,pL,pR,sE1,sE2,drytol,g,rho, &
         sw,fw)
+      !dir$ attributes forceinline :: riemann_aug_JCP
+      !dir$ attributes vector: uniform(maxiter,meqn,mwaves,drytol,g,rho) :: riemann_aug_JCP
 
       ! solve shallow water equations given single left and right states
       ! This solver is described in J. Comput. Phys. (6): 3089-3113, March 2008
@@ -52,6 +54,7 @@
       delP = pR - pL
       delnorm = delh**2 + delphi**2
 
+      !DIR$ FORCEINLINE
       call riemanntype(hL,hR,uL,uR,hm,s1m,s2m,rare1,rare2, &
                                                1,drytol,g)
 
@@ -210,6 +213,7 @@
 
          !solve for beta(k) using Cramers Rule=================
          do k=1,3
+            !dir$ unroll
             do mw=1,3
                   A(1,mw)=r(1,mw)
                   A(2,mw)=r(2,mw)
