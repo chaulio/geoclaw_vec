@@ -130,7 +130,7 @@
 
       !iterate to better determine the steady state wave
       convergencetol=1.d-6
-      do iter=1,maxiter
+!      do iter=1,maxiter  ! since maxiter=1, no loop needed!
          !determine steady state wave (this will be subtracted from the delta vectors)
          if (min(hLstar,hRstar).lt.drytol.and.rarecorrector) then
             rarecorrector=.false.
@@ -229,7 +229,7 @@
          enddo
 
          !exit if things aren't changing
-         if (abs(del(1)**2+del(3)**2-delnorm).lt.convergencetol) exit
+         !if (abs(del(1)**2+del(3)**2-delnorm).lt.convergencetol) exit
          delnorm = del(1)**2+del(3)**2
          !find new states qLstar and qRstar on either side of interface
          hLstar=hL
@@ -264,7 +264,7 @@
             uRstar=0.d0
          endif
 
-      enddo ! end iteration on Riemann problem
+  !    enddo ! end iteration on Riemann problem  ! since maxiter=1, no loop needed!
 
       do mw=1,mwaves
          sw(mw)=lambda(mw)
