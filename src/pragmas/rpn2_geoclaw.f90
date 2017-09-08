@@ -69,6 +69,16 @@
       double precision sqrt_ghL, sqrt_ghR
 
       logical rare1,rare2
+      
+    interface
+        subroutine solve_rpn2(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw, fw) 
+        !$OMP DECLARE SIMD(solve_rpn2) 
+            real(kind=8), intent(inout) :: sw(3)
+            real(kind=8), intent(inout) :: fw(3,3)
+            real(kind=8), intent(inout) :: hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR
+        end subroutine
+    end interface
+      
       call rpn2_start_timer()
 
       ! In case there is no pressure forcing
@@ -86,7 +96,7 @@
 
       !loop through Riemann problems at each grid cell
       !DIR$ VECTOR ALIGNED 
-      !$OMP SIMD PRIVATE(hL,hR,huL,huR,hvL,hvR,bL,bR,sw,fw)
+      !$OMP SIMD PRIVATE(hL,hR,huL,huR,hvL,hvR,bL,bR,pL,pR,sw,fw)
       do i=2-mbc,mx+mbc
 
 !-----------------------Initializing-----------------------------------
@@ -225,7 +235,7 @@
       
       
 subroutine solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw, fw)      
-      !$OMP DECLARE SIMD(solve_rpn)
+      !$OMP DECLARE SIMD(solve_rpn) 
       use geoclaw_module, only: g => grav, drytol => dry_tolerance, rho
       use geoclaw_module, only: earth_radius, deg2rad
       use amr_module, only: mcapa
