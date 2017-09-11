@@ -1,7 +1,7 @@
 !-----------------------------------------------------------------------
       subroutine riemann_aug_JCP(maxiter,meqn,mwaves,hL,hR,huL,huR, &
         hvL,hvR,bL,bR,uL,uR,vL,vR,phiL,phiR,pL,pR,sE1,sE2,drytol,g,rho, &
-        sw,fw)
+        sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33)
       !dir$ attributes forceinline :: riemann_aug_JCP
       !dir$ attributes vector: uniform(maxiter,meqn,mwaves,drytol,g,rho) :: riemann_aug_JCP
 
@@ -19,8 +19,9 @@
 
       !input
       integer meqn,mwaves,maxiter
-      double precision fw(meqn,mwaves)
-      double precision sw(mwaves)
+      !double precision fw(meqn,mwaves)
+      !double precision sw(mwaves)
+      double precision sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33
       double precision hL,hR,huL,huR,bL,bR,uL,uR,phiL,phiR,sE1,sE2
       double precision hvL,hvR,vL,vR,pL,pR
       double precision drytol,g,rho
@@ -213,7 +214,6 @@
 
          !solve for beta(k) using Cramers Rule=================
          do k=1,3
-            !dir$ unroll
             do mw=1,3
                   A(1,mw)=r(1,mw)
                   A(2,mw)=r(2,mw)
@@ -266,24 +266,49 @@
 
   !    enddo ! end iteration on Riemann problem  ! since maxiter=1, no loop needed!
 
-      do mw=1,mwaves
-         sw(mw)=lambda(mw)
-         fw(1,mw)=beta(mw)*r(2,mw)
-         fw(2,mw)=beta(mw)*r(3,mw)
-         fw(3,mw)=beta(mw)*r(2,mw)
-      enddo
+!       do mw=1,mwaves
+!          sw(mw)=lambda(mw)
+!          fw(1,mw)=beta(mw)*r(2,mw)
+!          fw(2,mw)=beta(mw)*r(3,mw)
+!          fw(3,mw)=beta(mw)*r(2,mw)
+!       enddo
+      sw1 = lambda(1)
+      sw2 = lambda(2)
+      sw3 = lambda(3)
+      !mw=1
+      fw11 = beta(1)*r(2,1)
+      fw21 = beta(1)*r(3,1)
+      fw31 = beta(1)*r(2,1)
+      !mw=2
+      fw12 = beta(2)*r(2,2)
+      fw22 = beta(2)*r(3,2)
+      fw32 = beta(2)*r(2,2)
+      !mw=3
+      fw13 = beta(3)*r(2,3)
+      fw23 = beta(3)*r(3,3)
+      fw33 = beta(3)*r(2,3)
+
       !find transverse components (ie huv jumps).
       ! MODIFIED from 5.3.1 version
-      fw(3,1)=fw(3,1)*vL
-      fw(3,3)=fw(3,3)*vR
-      fw(3,2)= 0.d0
+!       fw(3,1)=fw(3,1)*vL
+!       fw(3,3)=fw(3,3)*vR
+!       fw(3,2)= 0.d0
+      fw31=fw31*vL
+      fw33=fw33*vR
+      fw32=0.d0
  
-      hustar_interface = huL + fw(1,1)   ! = huR - fw(1,3)
+!       hustar_interface = huL + fw(1,1)   ! = huR - fw(1,3)
+!       if (hustar_interface <= 0.0d0) then
+!           fw(3,1) = fw(3,1) + (hR*uR*vR - hL*uL*vL - fw(3,1)- fw(3,3))
+!         else
+!           fw(3,3) = fw(3,3) + (hR*uR*vR - hL*uL*vL - fw(3,1)- fw(3,3))
+!       end if
+      hustar_interface = huL + fw11   ! = huR - fw(1,3)
       if (hustar_interface <= 0.0d0) then
-          fw(3,1) = fw(3,1) + (hR*uR*vR - hL*uL*vL - fw(3,1)- fw(3,3))
+          fw31 = fw31 + (hR*uR*vR - hL*uL*vL - fw31- fw33)
         else
-          fw(3,3) = fw(3,3) + (hR*uR*vR - hL*uL*vL - fw(3,1)- fw(3,3))
-        end if
+          fw33 = fw33 + (hR*uR*vR - hL*uL*vL - fw31- fw33)
+      end if
 
 
       return

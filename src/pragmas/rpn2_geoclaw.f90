@@ -57,13 +57,14 @@
       !local only
       integer m,i,mw,maxiter,mu,nv
       double precision wall(3)
-      double precision fw(3,3)
-      double precision sw(3)
+      !double precision fw(3,3)
+      !double precision sw(3)
+      double precision fw11, fw12, fw13, fw21, fw22, fw23, fw31, fw32, fw33
+      double precision sw1, sw2, sw3
 
-      double precision hR,hL,huR,huL,uR,uL,hvR,hvL,vR,vL,phiR,phiL,pL,pR
-      double precision bR,bL,sL,sR,sRoe1,sRoe2,sE1,sE2,uhat,chat
-      double precision s1m,s2m
-      double precision hstar,hstartest,hstarHLL,sLtest,sRtest
+      double precision hR,hL,huR,huL,hvR,hvL,pL,pR
+      double precision bR,bL
+
       double precision tw,dxdc
       
       double precision sqrt_ghL, sqrt_ghR
@@ -71,10 +72,9 @@
       logical rare1,rare2
       
     interface
-        subroutine solve_rpn2(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw, fw) 
+        subroutine solve_rpn2(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR,sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33) 
         !$OMP DECLARE SIMD(solve_rpn2) 
-            real(kind=8), intent(inout) :: sw(3)
-            real(kind=8), intent(inout) :: fw(3,3)
+            real(kind=8), intent(inout) :: sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33
             real(kind=8), intent(inout) :: hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR
         end subroutine
     end interface
@@ -96,7 +96,8 @@
 
       !loop through Riemann problems at each grid cell
       !DIR$ VECTOR ALIGNED 
-      !$OMP SIMD PRIVATE(hL,hR,huL,huR,hvL,hvR,bL,bR,pL,pR,sw,fw)
+      !$OMP SIMD PRIVATE(hL,hR,huL,huR,hvL,hvR,bL,bR,pL,pR, &
+      !$OMP  sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33)
       do i=2-mbc,mx+mbc
 
 !-----------------------Initializing-----------------------------------
@@ -148,34 +149,25 @@
          hvR=ql(i,nv)
          
          !DIR$ FORCEINLINE
-         call solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw, fw) 
+         call solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33) 
         
 
-!          do mw=1,mwaves
-!             s(mw,i)=sw(mw)
-!             fwave(1,mw,i)=fw(1,mw)
-!             fwave(mu,mw,i)=fw(2,mw)
-!             fwave(nv,mw,i)=fw(3,mw)
-! !            write(51,515) sw(mw),fw(1,mw),fw(2,mw),fw(3,mw)
-! !515         format("++sw",4e25.16)
-!          enddo
+         s(1,i) = sw1
+         s(2,i) = sw2
+         s(3,i) = sw3
+         ! mw=1
+         fwave(1, 1,i) = fw11
+         fwave(mu,1,i) = fw21
+         fwave(nv,1,i) = fw31
+         ! mw=2
+         fwave(1, 2,i) = fw12
+         fwave(mu,2,i) = fw22
+         fwave(nv,2,i) = fw32
+         ! mw=3
+         fwave(1, 3,i) = fw13
+         fwave(mu,3,i) = fw23
+         fwave(nv,3,i) = fw33
          
-         ! unrolling... mw=1
-         s(1,i)=sw(1)
-         fwave(1,1,i)=fw(1,1)
-         fwave(mu,1,i)=fw(2,1)
-         fwave(nv,1,i)=fw(3,1)
-         ! unrolling... mw=2
-         s(2,i)=sw(2)
-         fwave(1,2,i)=fw(1,2)
-         fwave(mu,2,i)=fw(2,2)
-         fwave(nv,2,i)=fw(3,2)
-         ! unrolling... mw=3
-         s(3,i)=sw(3)
-         fwave(1,3,i)=fw(1,3)
-         fwave(mu,3,i)=fw(2,3)
-         fwave(nv,3,i)=fw(3,3)
-
       enddo
 
 
@@ -234,7 +226,7 @@
       
       
       
-subroutine solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw, fw)      
+subroutine solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33)      
       !$OMP DECLARE SIMD(solve_rpn) 
       use geoclaw_module, only: g => grav, drytol => dry_tolerance, rho
       use geoclaw_module, only: earth_radius, deg2rad
@@ -249,11 +241,12 @@ subroutine solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw, fw)
       double precision hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR
       
       !output
-      double precision sw(3), fw(3,3)
+      !double precision sw(3), fw(3,3)
+      double precision sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33
 
       !local only
-      integer m,i,mw,maxiter,mu,nv
-      double precision wall(3)
+      integer m,i,mw,maxiter
+      double precision wall1, wall2, wall3
       double precision uR,uL,vR,vL,phiR,phiL
       double precision sL,sR,sRoe1,sRoe2,sE1,sE2,uhat,chat
       double precision s1m,s2m
@@ -296,9 +289,9 @@ subroutine solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw, fw)
             phiL = 0.d0
          endif
 
-         wall(1) = 1.d0
-         wall(2) = 1.d0
-         wall(3) = 1.d0
+         wall1 = 1.d0
+         wall2 = 1.d0
+         wall3 = 1.d0
          if (hR.le.drytol) then
             !DIR$ FORCEINLINE
             call riemanntype(hL,hL,uL,-uL,hstar,s1m,s2m, &
@@ -306,8 +299,8 @@ subroutine solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw, fw)
             hstartest=max(hL,hstar)
             if (hstartest+bL.lt.bR) then !right state should become ghost values that mirror left for wall problem
                !bR=hstartest+bL
-               wall(2)=0.d0
-               wall(3)=0.d0
+               wall2=0.d0
+               wall3=0.d0
                hR=hL
                huR=-huL
                bR=bL
@@ -324,8 +317,8 @@ subroutine solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw, fw)
             hstartest=max(hR,hstar)
             if (hstartest+bR.lt.bL) then  !left state should become ghost values that mirror right
               !bL=hstartest+bR
-               wall(1)=0.d0
-               wall(2)=0.d0
+               wall1=0.d0
+               wall2=0.d0
                hL=hR
                huL=-huR
                bL=bR
@@ -361,7 +354,7 @@ subroutine solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw, fw)
          !DIR$ FORCEINLINE
          call riemann_aug_JCP(maxiter,3,3,hL,hR,huL, &
              huR,hvL,hvR,bL,bR,uL,uR,vL,vR,phiL,phiR,pL,pR,sE1,sE2, &
-                                         drytol,g,rho,sw,fw)
+             drytol,g,rho,sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33)
 
 !          call riemann_ssqfwave(maxiter,meqn,mwaves,hL,hR,huL,huR,
 !      &     hvL,hvR,bL,bR,uL,uR,vL,vR,phiL,phiR,pL,pR,sE1,sE2,drytol,g,
@@ -373,47 +366,48 @@ subroutine solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw, fw)
 
 
 
-         ! For completely dry states, waves should be always zero!
-         ! (these problems could have been skipped, but to allow 
-         ! vectorization they weren't)
-         if (hL < drytol .and. hR < drytol) then
-            sw(1) = 0.0d0
-            sw(2) = 0.0d0
-            sw(3) = 0.0d0
-            fw(1,1) = 0.0d0
-            fw(2,1) = 0.0d0
-            fw(3,1) = 0.0d0
-            fw(1,2) = 0.0d0
-            fw(2,2) = 0.0d0
-            fw(3,2) = 0.0d0
-            fw(1,3) = 0.0d0
-            fw(2,3) = 0.0d0
-            fw(3,3) = 0.0d0            
-         endif
+          ! For completely dry states, waves should be always zero!
+          ! (these problems could have been skipped, but to allow 
+          ! vectorization they weren't)
+          if (hL < drytol .and. hR < drytol) then
+             sw1 = 0.0d0
+             sw2 = 0.0d0
+             sw3 = 0.0d0
+             fw11 = 0.0d0
+             fw21 = 0.0d0
+             fw31 = 0.0d0
+             fw12 = 0.0d0
+             fw22 = 0.0d0
+             fw32 = 0.0d0
+             fw13 = 0.0d0
+             fw23 = 0.0d0
+             fw33 = 0.0d0            
+          endif
 
 
-!        !eliminate ghost fluxes for wall
-!          do mw=1,3
-!             sw(mw)=sw(mw)*wall(mw)
-! 
-!                fw(1,mw)=fw(1,mw)*wall(mw) 
-!                fw(2,mw)=fw(2,mw)*wall(mw)
-!                fw(3,mw)=fw(3,mw)*wall(mw)
-!          enddo
-          ! unrolling... mw=1
-          sw(1)=sw(1)*wall(1)
-          fw(1,1)=fw(1,1)*wall(1) 
-          fw(2,1)=fw(2,1)*wall(1)
-          fw(3,1)=fw(3,1)*wall(1)
-          ! unrolling... mw=2
-          sw(2)=sw(2)*wall(2)
-          fw(1,2)=fw(1,2)*wall(2) 
-          fw(2,2)=fw(2,2)*wall(2)
-          fw(3,2)=fw(3,2)*wall(2)
-          ! unrolling... mw=3
-          sw(3)=sw(3)*wall(3)
-          fw(1,3)=fw(1,3)*wall(3) 
-          fw(2,3)=fw(2,3)*wall(3)
-          fw(3,3)=fw(3,3)*wall(3)
+          !eliminate ghost fluxes for wall
+!           do mw=1,3
+!              sw(mw)=sw(mw)*wall(mw)
+!  
+!                 fw(1,mw)=fw(1,mw)*wall(mw) 
+!                 fw(2,mw)=fw(2,mw)*wall(mw)
+!                 fw(3,mw)=fw(3,mw)*wall(mw)
+!           enddo
+
+            sw1 = sw1 * wall1
+            sw2 = sw2 * wall2
+            sw3 = sw3 * wall3
+            !mw=1
+            fw11 = fw11 * wall1
+            fw21 = fw21 * wall1
+            fw31 = fw31 * wall1
+            !mw=2
+            fw12 = fw12 * wall2
+            fw22 = fw22 * wall2
+            fw32 = fw32 * wall2
+            !mw=3
+            fw13 = fw13 * wall3
+            fw23 = fw23 * wall3
+            fw33 = fw33 * wall3
 
 end subroutine
