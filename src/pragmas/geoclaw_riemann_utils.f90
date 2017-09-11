@@ -29,11 +29,11 @@
 
       !local
       integer m,mw,k,iter
-      double precision A(3,3)
-      double precision r(3,3)
-      double precision lambda(3)
-      double precision del(3)
-      double precision beta(3)
+      double precision A11, A12, A13, A21, A22, A23, A31, A32, A33
+      double precision R11, R12, R13, R21, R22, R23, R31, R32, R33
+      double precision lambda1, lambda2, lambda3
+      double precision del1, del2, del3
+      double precision beta1, beta2, beta3
 
       double precision delh,delhu,delphi,delb,delnorm
       double precision rare1st,rare2st,sdelta,raremin,raremax
@@ -60,11 +60,11 @@
                                                1,drytol,g)
 
 
-      lambda(1)= min(sE1,s2m) !Modified Einfeldt speed
-      lambda(3)= max(sE2,s1m) !Modified Eindfeldt speed
-      sE1=lambda(1)
-      sE2=lambda(3)
-      lambda(2) = 0.d0  ! ### Fix to avoid uninitialized value in loop on mw -- Correct?? ###
+      lambda1= min(sE1,s2m) !Modified Einfeldt speed
+      lambda3= max(sE2,s1m) !Modified Eindfeldt speed
+      sE1=lambda1
+      sE2=lambda3
+      lambda2 = 0.d0  ! ### Fix to avoid uninitialized value in loop on mw -- Correct?? ###
 
       
       hstarHLL = max((huL-huR+sE2*hR-sE1*hL)/(sE2-sE1),0.d0) ! middle state in an HLL solve
@@ -73,7 +73,7 @@
       rarecorrectortest=.false.
       rarecorrector=.false.
       if (rarecorrectortest) then
-         sdelta=lambda(3)-lambda(1)
+         sdelta=lambda3-lambda1
          raremin = 0.5d0
          raremax = 0.9d0
          if (rare1.and.sE1*s1m.lt.0.d0) raremin=0.2d0
@@ -86,11 +86,11 @@
               max(rare1st,rare2st).lt.raremax*sdelta) then
                   rarecorrector=.true.
                if (rare1st.gt.rare2st) then
-                  lambda(2)=s1m
+                  lambda2=s1m
                elseif (rare2st.gt.rare1st) then
-                  lambda(2)=s2m
+                  lambda2=s2m
                else
-                  lambda(2)=0.5d0*(s1m+s2m)
+                  lambda2=0.5d0*(s1m+s2m)
                endif
             endif
          endif
@@ -98,17 +98,30 @@
       endif
 
 !     ## Is this correct 2-wave when rarecorrector == .true. ??
-      do mw=1,mwaves
-         r(1,mw)=1.d0
-         r(2,mw)=lambda(mw)
-         r(3,mw)=(lambda(mw))**2
-      enddo
+!       do mw=1,mwaves
+!          r(1,mw)=1.d0
+!          r(2,mw)=lambda(mw)
+!          r(3,mw)=(lambda(mw))**2
+!       enddo
+      !mw=1
+      r11=1.d0
+      r21=lambda1
+      r31=lambda1**2
+      !mw=2
+      r12=1.d0
+      r22=lambda2
+      r32=lambda2**2
+      !mw=3
+      r13=1.d0
+      r23=lambda3
+      r33=lambda3**2
+      
       if (.not.rarecorrector) then
-         lambda(2) = 0.5d0*(lambda(1)+lambda(3))
+         lambda2 = 0.5d0*(lambda1+lambda3)
          !lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
-         r(1,2)=0.d0
-         r(2,2)=0.d0
-         r(3,2)=1.d0
+         r12=0.d0
+         r22=0.d0
+         r32=1.d0
       endif
       !---------------------------------------------------
 
@@ -141,11 +154,11 @@
             uRstar=uR
             huLstar=uLstar*hLstar
             huRstar=uRstar*hRstar
-            lambda(2) = 0.5d0*(lambda(1)+lambda(3))
+            lambda2 = 0.5d0*(lambda1+lambda3)
             !lambda(2) = max(min(0.5d0*(s1m+s2m),sE2),sE1)
-            r(1,2)=0.d0
-            r(2,2)=0.d0
-            r(3,2)=1.d0
+            r12=0.d0
+            r22=0.d0
+            r32=1.d0
          endif
 
          hbar =  max(0.5d0*(hLstar+hRstar),0.d0)
@@ -202,35 +215,87 @@
          deldelphi=max(deldelphi,g*min(-hLstar*delb,-hRstar*delb))
          deldelphi = deldelphi - hbar * delp / rho
 
-         del(1)=delh-deldelh
-         del(2)=delhu
-         del(3)=delphi-deldelphi
+         del1=delh-deldelh
+         del2=delhu
+         del3=delphi-deldelphi
 
          !Determine determinant of eigenvector matrix========
-         det1=r(1,1)*(r(2,2)*r(3,3)-r(2,3)*r(3,2))
-         det2=r(1,2)*(r(2,1)*r(3,3)-r(2,3)*r(3,1))
-         det3=r(1,3)*(r(2,1)*r(3,2)-r(2,2)*r(3,1))
+         det1=r11*(r22*r33-r23*r32)
+         det2=r12*(r21*r33-r23*r31)
+         det3=r13*(r21*r32-r22*r31)
          determinant=det1-det2+det3
 
          !solve for beta(k) using Cramers Rule=================
-         do k=1,3
-            do mw=1,3
-                  A(1,mw)=r(1,mw)
-                  A(2,mw)=r(2,mw)
-                  A(3,mw)=r(3,mw)
-            enddo
-            A(1,k)=del(1)
-            A(2,k)=del(2)
-            A(3,k)=del(3)
-            det1=A(1,1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2))
-            det2=A(1,2)*(A(2,1)*A(3,3)-A(2,3)*A(3,1))
-            det3=A(1,3)*(A(2,1)*A(3,2)-A(2,2)*A(3,1))
-            beta(k)=(det1-det2+det3)/determinant
-         enddo
+!          do k=1,3
+!             do mw=1,3
+!                   A(1,mw)=r(1,mw)
+!                   A(2,mw)=r(2,mw)
+!                   A(3,mw)=r(3,mw)
+!             enddo
+!             A(1,k)=del(1)
+!             A(2,k)=del(2)
+!             A(3,k)=del(3)
+!             det1=A(1,1)*(A(2,2)*A(3,3)-A(2,3)*A(3,2))
+!             det2=A(1,2)*(A(2,1)*A(3,3)-A(2,3)*A(3,1))
+!             det3=A(1,3)*(A(2,1)*A(3,2)-A(2,2)*A(3,1))
+!             beta(k)=(det1-det2+det3)/determinant
+!          enddo
+         !k=1
+         A11 = r11
+         A12 = r12
+         A13 = r13
+         A21 = r21
+         A22 = r22
+         A23 = r23
+         A31 = r31
+         A32 = r32
+         A33 = r33
+         A11=del1
+         A21=del2
+         A31=del3
+         det1=A11*(A22*A33-A23*A32)
+         det2=A12*(A21*A33-A23*A31)
+         det3=A13*(A21*A32-A22*A31)
+         beta1=(det1-det2+det3)/determinant
+         !k=2
+         A11 = r11
+         A12 = r12
+         A13 = r13
+         A21 = r21
+         A22 = r22
+         A23 = r23
+         A31 = r31
+         A32 = r32
+         A33 = r33
+         A12=del1
+         A22=del2
+         A32=del3
+         det1=A11*(A22*A33-A23*A32)
+         det2=A12*(A21*A33-A23*A31)
+         det3=A13*(A21*A32-A22*A31)
+         beta2=(det1-det2+det3)/determinant
+         !k=3
+         A11 = r11
+         A12 = r12
+         A13 = r13
+         A21 = r21
+         A22 = r22
+         A23 = r23
+         A31 = r31
+         A32 = r32
+         A33 = r33
+         A13=del1
+         A23=del2
+         A33=del3
+         det1=A11*(A22*A33-A23*A32)
+         det2=A12*(A21*A33-A23*A31)
+         det3=A13*(A21*A32-A22*A31)
+         beta3=(det1-det2+det3)/determinant
+         
 
          !exit if things aren't changing
          !if (abs(del(1)**2+del(3)**2-delnorm).lt.convergencetol) exit
-         delnorm = del(1)**2+del(3)**2
+         delnorm = del1**2+del3**2
          !find new states qLstar and qRstar on either side of interface
          hLstar=hL
          hRstar=hR
@@ -238,18 +303,50 @@
          uRstar=uR
          huLstar=uLstar*hLstar
          huRstar=uRstar*hRstar
-         do mw=1,mwaves
-            if (lambda(mw).lt.0.d0) then
-               hLstar= hLstar + beta(mw)*r(1,mw)
-               huLstar= huLstar + beta(mw)*r(2,mw)
-            endif
-         enddo
-         do mw=mwaves,1,-1
-            if (lambda(mw).gt.0.d0) then
-               hRstar= hRstar - beta(mw)*r(1,mw)
-               huRstar= huRstar - beta(mw)*r(2,mw)
-            endif
-         enddo
+!          do mw=1,mwaves
+!             if (lambda(mw).lt.0.d0) then
+!                hLstar= hLstar + beta(mw)*r(1,mw)
+!                huLstar= huLstar + beta(mw)*r(2,mw)
+!             endif
+!          enddo
+         !mw = 1
+         if (lambda1.lt.0.d0) then
+            hLstar= hLstar + beta1*r11
+            huLstar= huLstar + beta1*r21
+         endif
+         !mw = 2
+         if (lambda2.lt.0.d0) then
+            hLstar= hLstar + beta2*r12
+            huLstar= huLstar + beta2*r22
+         endif
+         !mw = 3
+         if (lambda3.lt.0.d0) then
+            hLstar= hLstar + beta3*r13
+            huLstar= huLstar + beta3*r23
+         endif
+
+!          do mw=mwaves,1,-1
+!             if (lambda(mw).gt.0.d0) then
+!                hRstar= hRstar - beta(mw)*r(1,mw)
+!                huRstar= huRstar - beta(mw)*r(2,mw)
+!             endif
+!          enddo
+         !mw=3
+         if (lambda3.gt.0.d0) then
+            hRstar= hRstar - beta3*r13
+            huRstar= huRstar - beta3*r23
+         endif
+         !mw=2
+         if (lambda2.gt.0.d0) then
+            hRstar= hRstar - beta2*r12
+            huRstar= huRstar - beta2*r22
+         endif
+         !mw=1
+         if (lambda1.gt.0.d0) then
+            hRstar= hRstar - beta1*r11
+            huRstar= huRstar - beta1*r21
+         endif
+
 
          if (hLstar.gt.drytol) then
             uLstar=huLstar/hLstar
@@ -272,21 +369,21 @@
 !          fw(2,mw)=beta(mw)*r(3,mw)
 !          fw(3,mw)=beta(mw)*r(2,mw)
 !       enddo
-      sw1 = lambda(1)
-      sw2 = lambda(2)
-      sw3 = lambda(3)
+      sw1 = lambda1
+      sw2 = lambda2
+      sw3 = lambda3
       !mw=1
-      fw11 = beta(1)*r(2,1)
-      fw21 = beta(1)*r(3,1)
-      fw31 = beta(1)*r(2,1)
+      fw11 = beta1*r21
+      fw21 = beta1*r31
+      fw31 = beta1*r21
       !mw=2
-      fw12 = beta(2)*r(2,2)
-      fw22 = beta(2)*r(3,2)
-      fw32 = beta(2)*r(2,2)
+      fw12 = beta2*r22
+      fw22 = beta2*r32
+      fw32 = beta2*r22
       !mw=3
-      fw13 = beta(3)*r(2,3)
-      fw23 = beta(3)*r(3,3)
-      fw33 = beta(3)*r(2,3)
+      fw13 = beta3*r23
+      fw23 = beta3*r33
+      fw33 = beta3*r23
 
       !find transverse components (ie huv jumps).
       ! MODIFIED from 5.3.1 version
