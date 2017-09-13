@@ -71,6 +71,8 @@
 
       logical rare1,rare2
       
+      
+      
     interface
         subroutine solve_rpn2(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR,sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33) 
         !$OMP DECLARE SIMD(solve_rpn2) 
@@ -81,10 +83,6 @@
       
       call rpn2_start_timer()
 
-      ! In case there is no pressure forcing
-      pL = 0.d0
-      pR = 0.d0
-      
       !set normal direction
       if (ixy.eq.1) then
          mu=2
@@ -140,6 +138,8 @@
          huR = ql(i,mu) 
          bL = auxr(i-1,1)
          bR = auxl(i,1)
+         pL = 0.d0
+         pR = 0.d0
          if (pressure_forcing) then
              pL = auxr(i-1,pressure_index)
              pR = auxl(i, pressure_index)
