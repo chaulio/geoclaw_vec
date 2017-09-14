@@ -71,13 +71,17 @@
 
       logical rare1,rare2
       
-    interface
+      interface
         subroutine solve_rpn2(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR,sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33) 
         !$OMP DECLARE SIMD(solve_rpn2) 
             real(kind=8), intent(inout) :: sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33
             real(kind=8), intent(inout) :: hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR
         end subroutine
-    end interface
+      end interface
+      
+      !DIR$ ASSUME_ALIGNED ql:64, qr:64, auxl:64, auxr:64, fwave:64, s:64
+    
+    
       
       call rpn2_start_timer()
 
@@ -95,9 +99,12 @@
       endif
 
       !loop through Riemann problems at each grid cell
-      !-DIR$ VECTOR ALIGNED 
-      !$OMP SIMD PRIVATE(hL,hR,huL,huR,hvL,hvR,bL,bR,pL,pR, &
-      !$OMP  sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33)
+#if !defined(__MIC__)
+      ! for some reason this causes runtime error on MICs,
+      ! even though the arrays are really aligned
+      !DIR$ VECTOR ALIGNED 
+#endif
+      !DIR$ SIMD
       do i=2-mbc,mx+mbc
 
          !Riemann problem variables
@@ -154,54 +161,63 @@
 
 
 !==========Capacity for mapping from latitude longitude to physical space====
-        if (mcapa.gt.0) then
-         do i=2-mbc,mx+mbc
-          if (ixy.eq.1) then
-             dxdc=(earth_radius*deg2rad)
-          else
-             dxdc=earth_radius*cos(auxl(i,3))*deg2rad
-          endif
+      if (mcapa > 0) then
+          if (ixy == 1) then
+              dxdc = earth_radius*deg2rad
 
-          do mw=1,mwaves
-!             if (s(mw,i) .gt. 316.d0) then
-!               # shouldn't happen unless h > 10 km!
-!                write(6,*) 'speed > 316: i,mw,s(mw,i): ',i,mw,s(mw,i)
-!                endif
-               s(mw,i)=dxdc*s(mw,i)
-               fwave(1,mw,i)=dxdc*fwave(1,mw,i)
-               fwave(2,mw,i)=dxdc*fwave(2,mw,i)
-               fwave(3,mw,i)=dxdc*fwave(3,mw,i)
-          enddo
-         enddo
-        endif
+              do i=2-mbc,mx+mbc
+                  do mw=1,3
+                      s(mw,i) = dxdc * s(mw,i)
+                      fwave(1,mw,i) = dxdc*fwave(1,mw,i)
+                      fwave(2,mw,i) = dxdc*fwave(2,mw,i)
+                      fwave(3,mw,i) = dxdc*fwave(3,mw,i)
+                  enddo
+              enddo
+          else
+
+              do i=2-mbc,mx+mbc
+                  dxdc=earth_radius*cos(auxl(i,3))*deg2rad
+                  do mw=1,3
+                      s(mw,i) = dxdc * s(mw,i)
+                      fwave(1,mw,i)=dxdc*fwave(1,mw,i)
+                      fwave(2,mw,i)=dxdc*fwave(2,mw,i)
+                      fwave(3,mw,i)=dxdc*fwave(3,mw,i)
+                  enddo
+              enddo
+          endif
+      endif
 
 !===============================================================================
 
+      do i=1-mbc,mx+mbc
+          do m=1,3
+              amdq(m,i) = 0.d0
+          enddo
+      enddo
 
-!============= compute fluctuations=============================================
-         amdq(1:3,:) = 0.d0
-         apdq(1:3,:) = 0.d0
-         do i=2-mbc,mx+mbc
-            do  mw=1,mwaves
-               if (s(mw,i) < 0.d0) then
-                     amdq(1:3,i) = amdq(1:3,i) + fwave(1:3,mw,i)
-               else if (s(mw,i) > 0.d0) then
-                  apdq(1:3,i)  = apdq(1:3,i) + fwave(1:3,mw,i)
-               else
-                 amdq(1:3,i) = amdq(1:3,i) + 0.5d0 * fwave(1:3,mw,i)
-                 apdq(1:3,i) = apdq(1:3,i) + 0.5d0 * fwave(1:3,mw,i)
-               endif
-            enddo
+
+      do i=1-mbc,mx+mbc
+          do m=1,3
+              apdq(m,i) = 0.d0
          enddo
-!--       do i=2-mbc,mx+mbc
-!--            do m=1,meqn
-!--                write(51,151) m,i,amdq(m,i),apdq(m,i)
-!--                write(51,152) fwave(m,1,i),fwave(m,2,i),fwave(m,3,i)
-!--151             format("++3 ampdq ",2i4,2e25.15)
-!--152             format("++3 fwave ",8x,3e25.15)
-!--            enddo
-!--        enddo
+      enddo 
 
+      !============= compute fluctuations=============================================
+
+
+      do i=2-mbc,mx+mbc
+           do  mw=1,3
+              if (s(mw,i) < 0.d0) then
+                  amdq(1:3,i) = amdq(1:3,i) + fwave(1:3,mw,i)
+              else if (s(mw,i) > 0.d0) then
+                  apdq(1:3,i)  = apdq(1:3,i) + fwave(1:3,mw,i)
+              else
+                  amdq(1:3,i) = amdq(1:3,i) + 0.5d0 * fwave(1:3,mw,i)
+                  apdq(1:3,i) = apdq(1:3,i) + 0.5d0 * fwave(1:3,mw,i)
+              endif
+          enddo
+      enddo
+     
       call rpn2_stop_timer()
       return
       end subroutine
