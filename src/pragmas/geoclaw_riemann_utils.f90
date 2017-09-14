@@ -228,7 +228,7 @@
             beta(k)=(det1-det2+det3)/determinant
          enddo
 
-         !exit if things aren't changing
+         !exit if things aren't changing -> removed to allow vectorization!
          !if (abs(del(1)**2+del(3)**2-delnorm).lt.convergencetol) exit
          delnorm = del(1)**2+del(3)**2
          !find new states qLstar and qRstar on either side of interface
@@ -377,7 +377,7 @@
          alpha2=0.d0
 
 !        !iterate to better determine Riemann problem
-         do iter=1,maxiter
+         !do iter=1,maxiter ! since maxiter=1, this loop is not neecessary!
 
             !determine steady state wave (this will be subtracted from the delta vectors)
             hbar =  max(0.5d0*(hLstar+hRstar),0.d0)
@@ -434,9 +434,10 @@
             beta1 = (sE2*delhu - delphidecomp)/(sE2-sE1)
             beta2 = (delphidecomp - sE1*delhu)/(sE2-sE1)
 
-            if ((delalpha2**2+delalpha1**2).lt.convergencetol**2) then
-               exit
-            endif
+            ! no exits! -> vectorization
+!             if ((delalpha2**2+delalpha1**2).lt.convergencetol**2) then
+!                exit
+!             endif
 !
             if (sE2.gt.0.d0.and.sE1.lt.0.d0) then
                hLstar=hL+alpha1
@@ -467,7 +468,7 @@
                uRstar=0.d0
             endif
 
-         enddo
+         !enddo ! since maxiter=1, this loop is not neecessary!
       endif
 
       delhdecomp = delh - deldelh
