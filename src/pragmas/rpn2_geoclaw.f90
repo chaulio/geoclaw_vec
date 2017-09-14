@@ -95,43 +95,10 @@
       endif
 
       !loop through Riemann problems at each grid cell
-      !DIR$ VECTOR ALIGNED 
+      !-DIR$ VECTOR ALIGNED 
       !$OMP SIMD PRIVATE(hL,hR,huL,huR,hvL,hvR,bL,bR,pL,pR, &
       !$OMP  sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33)
       do i=2-mbc,mx+mbc
-
-!-----------------------Initializing-----------------------------------
-         !inform of a bad riemann problem from the start
-!          if((qr(i-1,1).lt.0.d0).or.(ql(i,1) .lt. 0.d0)) then
-!             write(*,*) 'Negative input: hl,hr,i=',qr(i-1,1),ql(i,1),i
-!          endif
-
-         !Initialize Riemann problem for grid interface -> not necessary, they are always computed by the solver
-!          do mw=1,mwaves
-!               s(mw,i)=0.d0
-!                  fwave(1,mw,i)=0.d0
-!                  fwave(2,mw,i)=0.d0
-!                  fwave(3,mw,i)=0.d0
-!          enddo
-        
-
-!          !zero (small) negative values if they exist
-!          if (qr(i-1,1).lt.0.d0) then
-!                qr(i-1,1)=0.d0
-!                qr(i-1,2)=0.d0
-!                qr(i-1,3)=0.d0
-!          endif
-! 
-!          if (ql(i,1).lt.0.d0) then
-!                ql(i,1)=0.d0
-!                ql(i,2)=0.d0
-!                ql(i,3)=0.d0
-!          endif
-
-         !skip problem if in a completely dry area
-!           if (qr(i-1,1) <= drytol .and. ql(i,1) <= drytol) then
-!              continue
-!           endif
 
          !Riemann problem variables
          hL = qr(i-1,1) 
@@ -140,6 +107,8 @@
          huR = ql(i,mu) 
          bL = auxr(i-1,1)
          bR = auxl(i,1)
+         pL = 0.d0
+         pR = 0.d0
          if (pressure_forcing) then
              pL = auxr(i-1,pressure_index)
              pR = auxl(i, pressure_index)
@@ -147,6 +116,19 @@
 
          hvL=qr(i-1,nv) 
          hvR=ql(i,nv)
+         
+         sw1 = 0.0d0
+         sw2 = 0.0d0
+         sw3 = 0.0d0
+         fw11 = 0.0d0
+         fw21 = 0.0d0
+         fw31 = 0.0d0
+         fw12 = 0.0d0
+         fw22 = 0.0d0
+         fw32 = 0.0d0
+         fw13 = 0.0d0
+         fw23 = 0.0d0
+         fw33 = 0.0d0   
          
          !DIR$ FORCEINLINE
          call solve_rpn(hL, hR, huL, huR, hvL, hvR, bL, bR, pL, pR, sw1,sw2,sw3,fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33) 
