@@ -4,7 +4,7 @@ cd $WORKDIR
 flags="-fast -ipo -fopenmp -align array64byte -fp-model=precise "
 export FC=ifort
 
-for version in 1 2 3 ; do
+for version in 1 2 ; do
 	for mic in yes no ; do
 		if [ "$mic" = "yes" ]
 		then

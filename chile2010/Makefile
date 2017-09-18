@@ -12,7 +12,7 @@ CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
 VERSION?=2
 # 0 = original code (without statistics)
 # 1 = original code (with statistics)
-# 2 = SOA 
+# 2 = vectorized code 
 
 
 # Adjust these variables if desired:
@@ -52,15 +52,6 @@ EXCLUDE_SOURCES = \
   $(GEOLIB)/amr2.f90 \
 
 endif
-ifeq ($(VERSION),2)
-EXCLUDE_SOURCES = \
-  $(GEOLIB)/amr2.f90 \
-  $(GEOLIB)/qad.f \
-  $(GEOLIB)/flux2fw.f \
-  $(GEOLIB)/step2.f \
-  $(AMRLIB)/inlinelimiter.f \
-
-endif
 ifeq ($(VERSION),3)
 EXCLUDE_SOURCES = \
   $(GEOLIB)/amr2.f90 \
@@ -98,31 +89,18 @@ SOURCES = \
 
 endif
 
-# structure of arrays + vectorization (vec solver)
+
+# structure of arrays + vectorization (directives)
 ifeq ($(VERSION),2)
 SOURCES = \
-  $(NEWCODE)/soa/rpn2_geoclaw.f \
-  $(NEWCODE)/soa/rpt2_geoclaw.f \
-  $(NEWCODE)/soa/amr2.f90 \
-  $(NEWCODE)/soa/qad.f \
-  $(NEWCODE)/soa/flux2fw.f \
-  $(NEWCODE)/soa/step2.f \
-  $(NEWCODE)/soa/inlinelimiter.f \
-  $(NEWCODE)/soa/geoclaw_riemann_utils.f \
-
-endif
-  
-# structure of arrays + vectorization (pragmas)
-ifeq ($(VERSION),3)
-SOURCES = \
-  $(NEWCODE)/pragmas/rpn2_geoclaw.f90 \
-  $(NEWCODE)/soa/rpt2_geoclaw.f \
-  $(NEWCODE)/soa/amr2.f90 \
-  $(NEWCODE)/soa/qad.f \
-  $(NEWCODE)/soa/flux2fw.f \
-  $(NEWCODE)/soa/step2.f \
-  $(NEWCODE)/soa/inlinelimiter.f \
-  $(NEWCODE)/pragmas/geoclaw_riemann_utils.f90 \
+  $(NEWCODE)/vec/rpn2_geoclaw.f90 \
+  $(NEWCODE)/vec/rpt2_geoclaw.f \
+  $(NEWCODE)/vec/amr2.f90 \
+  $(NEWCODE)/vec/qad.f \
+  $(NEWCODE)/vec/flux2fw.f \
+  $(NEWCODE)/vec/step2.f \
+  $(NEWCODE)/vec/inlinelimiter.f \
+  $(NEWCODE)/vec/geoclaw_riemann_utils.f90 \
 
 endif
   
