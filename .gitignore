@@ -7,8 +7,12 @@
 *_plots
 *.output
 *_output
-xgeoclaw
+xgeoclaw*
 *.pyc
 pyclaw.log
 gauge*.txt
 *.attr
+*myjob.e*
+*myjob.o*
+*.optrpt
+chile2010/logs*
