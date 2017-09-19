@@ -46,6 +46,9 @@
       double precision det1,det2,det3,determinant
 
       logical rare1,rare2,rarecorrector,rarecorrectortest,sonic
+      
+      ! used to pre-compute square roots
+      double precision sqrt_ghL, sqrt_ghR, sqrt_ghm
 
       !determine del vectors
       delh = hR-hL
@@ -59,6 +62,10 @@
       call riemanntype(hL,hR,uL,uR,hm,s1m,s2m,rare1,rare2, &
                                                1,drytol,g)
 
+      ! pre-compute square roots:
+      sqrt_ghL = sqrt(g*hL)
+      sqrt_ghR = sqrt(g*hR)
+      sqrt_ghm = sqrt(g*hm)
 
       lambda(1)= min(sE1,s2m) !Modified Einfeldt speed
       lambda(3)= max(sE2,s1m) !Modified Eindfeldt speed
@@ -80,8 +87,8 @@
          if (rare2.and.sE2*s2m.lt.0.d0) raremin=0.2d0
          if (rare1.or.rare2) then
             !see which rarefaction is larger
-            rare1st=3.d0*(sqrt(g*hL)-sqrt(g*hm))
-            rare2st=3.d0*(sqrt(g*hR)-sqrt(g*hm))
+            rare1st=3.d0*(sqrt_ghL-sqrt_ghm)
+            rare2st=3.d0*(sqrt_ghR-sqrt_ghm)
             if (max(rare1st,rare2st).gt.raremin*sdelta.and. &
               max(rare1st,rare2st).lt.raremax*sdelta) then
                   rarecorrector=.true.
@@ -167,9 +174,9 @@
             sonic = .true.
          else if (sE2 > -criticaltol_2 .and. s2m <  criticaltol_2) then
             sonic = .true.
-         else if ((uL+dsqrt(g*hL))*(uR+dsqrt(g*hR)) < 0.d0) then
+         else if ((uL+sqrt_ghL)*(uR+sqrt_ghR) < 0.d0) then
             sonic = .true.
-         else if ((uL- dsqrt(g*hL))*(uR- dsqrt(g*hR)) < 0.d0) then
+         else if ((uL- sqrt_ghL)*(uR- sqrt_ghR) < 0.d0) then
             sonic = .true.
          end if
 
@@ -589,6 +596,7 @@
       double precision hm,u1m,u2m,um,delu
       double precision h_max,h_min,h0,F_max,F_min,dfdh,F0,slope,gL,gR
       integer iter
+      double precision sqrt_ghL, sqrt_ghR
 
 
 
@@ -597,12 +605,16 @@
       h_min=min(hR,hL)
       h_max=max(hR,hL)
       delu=uR-uL
+      
+      ! pre-compute square roots:
+      sqrt_ghL = sqrt(g*hL)
+      sqrt_ghR = sqrt(g*hR)
 
       if (h_min.le.drytol) then
          hm=0.d0
          um=0.d0
-         s1m=uR+uL-2.d0*sqrt(g*hR)+2.d0*sqrt(g*hL)
-         s2m=uR+uL-2.d0*sqrt(g*hR)+2.d0*sqrt(g*hL)
+         s1m=uR+uL-2.d0*sqrt_ghR+2.d0*sqrt_ghL
+         s2m=uR+uL-2.d0*sqrt_ghR+2.d0*sqrt_ghL
          if (hL.le.0.d0) then
             rare2=.true.
             rare1=.false.
@@ -619,11 +631,11 @@
          if (F_min.gt.0.d0) then !2-rarefactions
 
             hm=(1.d0/(16.d0*g))* &
-                    max(0.d0,-delu+2.d0*(sqrt(g*hL)+sqrt(g*hR)))**2
-            um=sign(1.d0,hm)*(uL+2.d0*(sqrt(g*hL)-sqrt(g*hm)))
+                    max(0.d0,-delu+2.d0*(sqrt_ghL+sqrt_ghR))**2
+            um=sign(1.d0,hm)*(uL+2.d0*(sqrt_ghL-sqrt(g*hm)))
 
-            s1m=uL+2.d0*sqrt(g*hL)-3.d0*sqrt(g*hm)
-            s2m=uR-2.d0*sqrt(g*hR)+3.d0*sqrt(g*hm)
+            s1m=uL+2.d0*sqrt_ghL-3.d0*sqrt(g*hm)
+            s2m=uR-2.d0*sqrt_ghR+3.d0*sqrt(g*hm)
 
             rare1=.true.
             rare2=.true.
@@ -663,15 +675,15 @@
 
             hm=h0
             if (hL.gt.hR) then
-               um=uL+2.d0*sqrt(g*hL)-2.d0*sqrt(g*hm)
-               s1m=uL+2.d0*sqrt(g*hL)-3.d0*sqrt(g*hm)
-               s2m=uL+2.d0*sqrt(g*hL)-sqrt(g*hm)
+               um=uL+2.d0*sqrt_ghL-2.d0*sqrt(g*hm)
+               s1m=uL+2.d0*sqrt_ghL-3.d0*sqrt(g*hm)
+               s2m=uL+2.d0*sqrt_ghL-sqrt(g*hm)
                rare1=.true.
                rare2=.false.
             else
-               s2m=uR-2.d0*sqrt(g*hR)+3.d0*sqrt(g*hm)
-               s1m=uR-2.d0*sqrt(g*hR)+sqrt(g*hm)
-               um=uR-2.d0*sqrt(g*hR)+2.d0*sqrt(g*hm)
+               s2m=uR-2.d0*sqrt_ghR+3.d0*sqrt(g*hm)
+               s1m=uR-2.d0*sqrt_ghR+sqrt(g*hm)
+               um=uR-2.d0*sqrt_ghR+2.d0*sqrt(g*hm)
                rare2=.true.
                rare1=.false.
             endif

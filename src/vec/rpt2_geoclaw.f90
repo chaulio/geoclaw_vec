@@ -35,6 +35,11 @@ subroutine rpt2(ixy,imp,maxm,meqn,mwaves,maux,mbc,mx, &
 
     integer :: ixy,maxm,meqn,maux,mwaves,mbc,mx,imp
     integer :: i,m,mw,mu,mv
+    
+    ! arrays with inverted indices used to compute with vectorization.
+    ! the values are stored in the actual arrays in the correct order afterwards.
+    real(kind=DP) :: bmasdq_inv(1-mbc:maxm+mbc,meqn)
+    real(kind=DP) :: bpasdq_inv(1-mbc:maxm+mbc,meqn)    
 
     call rpt2_start_timer()
 
@@ -143,21 +148,30 @@ subroutine rpt2(ixy,imp,maxm,meqn,mwaves,maux,mbc,mx, &
             endif
         endif
 
-        bmasdq(:,i)=0.0d0
-        bpasdq(:,i)=0.0d0
+        bmasdq_inv(i,:)=0.0d0
+        bpasdq_inv(i,:)=0.0d0
         do mw=1,3
             if (s(mw)<0.d0) then
-                bmasdq(1,i) =bmasdq(1,i) + dxdcm*s(mw)*beta(mw)*r(mw,1)
-                bmasdq(mu,i)=bmasdq(mu,i)+ dxdcm*s(mw)*beta(mw)*r(mw,2)
-                bmasdq(mv,i)=bmasdq(mv,i)+ dxdcm*s(mw)*beta(mw)*r(mw,3)
+                bmasdq_inv(i,1) =bmasdq_inv(i,1) + dxdcm*s(mw)*beta(mw)*r(mw,1)
+                bmasdq_inv(i,mu)=bmasdq_inv(i,mu)+ dxdcm*s(mw)*beta(mw)*r(mw,2)
+                bmasdq_inv(i,mv)=bmasdq_inv(i,mv)+ dxdcm*s(mw)*beta(mw)*r(mw,3)
             elseif (s(mw)>0.d0) then
-                bpasdq(1,i) =bpasdq(1,i) + dxdcp*s(mw)*beta(mw)*r(mw,1)
-                bpasdq(mu,i)=bpasdq(mu,i)+ dxdcp*s(mw)*beta(mw)*r(mw,2)
-                bpasdq(mv,i)=bpasdq(mv,i)+ dxdcp*s(mw)*beta(mw)*r(mw,3)
+                bpasdq_inv(i,1) =bpasdq_inv(i,1) + dxdcp*s(mw)*beta(mw)*r(mw,1)
+                bpasdq_inv(i,mu)=bpasdq_inv(i,mu)+ dxdcp*s(mw)*beta(mw)*r(mw,2)
+                bpasdq_inv(i,mv)=bpasdq_inv(i,mv)+ dxdcp*s(mw)*beta(mw)*r(mw,3)
             endif
         enddo
         !========================================================================
     enddo
+    
+    !copy output into actual arrays now
+    !$OMP SIMD
+    do i=2-mbc,mx+mbc
+        do m=1,meqn
+            bmasdq(m,i) = bmasdq_inv(i,m)
+            bpasdq(m,i) = bpasdq_inv(i,m)
+        end do
+    end do
 
     call rpt2_stop_timer()
     return
