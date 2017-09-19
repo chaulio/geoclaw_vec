@@ -94,7 +94,7 @@ endif
 ifeq ($(VERSION),2)
 SOURCES = \
   $(NEWCODE)/vec/rpn2_geoclaw.f90 \
-  $(NEWCODE)/vec/rpt2_geoclaw.f \
+  $(NEWCODE)/vec/rpt2_geoclaw.f90 \
   $(NEWCODE)/vec/amr2.f90 \
   $(NEWCODE)/vec/qad.f \
   $(NEWCODE)/vec/flux2fw.f \
