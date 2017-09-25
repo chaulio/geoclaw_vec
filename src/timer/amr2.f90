@@ -112,7 +112,7 @@ program amr2
     integer :: i, iaux, mw, level
     integer :: ndim, nvar, naux, mcapa1, mindim, dimensional_split
     integer :: nstart, nsteps, nv1, nx, ny, lentotsave, num_gauge_SAVE
-    integer :: omp_get_max_threads, maxthreads
+    integer :: maxthreads
     real(kind=8) :: time, ratmet, cut, dtinit, dt_max
     logical :: vtime, rest, output_t0    
 
@@ -138,6 +138,9 @@ program amr2
     open(parmunit,file=parmfile,status='unknown',form='formatted')
 
     maxthreads = 1    !! default, if no openmp
+    
+    ! init statistics module
+    call init_stats()
 
     ! Open AMRClaw primary parameter file
     call opendatafile(inunit,clawfile)
