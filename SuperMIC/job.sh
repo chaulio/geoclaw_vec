@@ -1,5 +1,5 @@
 #!/bin/bash
-#@ environment = $machine ; $version ; $openmp
+#@ environment = $machine ; $version ; $num_threads
 #@ wall_clock_limit = 08:00:00
 #@ job_name = geoclaw
 #@ job_type = parallel
@@ -26,24 +26,12 @@ cd $WORKDIR
 python setrun.py
 mkdir -p logs
 
-if [ "$machine" = "host" ]
-then
-    device=$host-ib
-    export OMP_NUM_THREADS=16
-else
-    device=$host-mic0
-    export OMP_NUM_THREADS=240
+export OMP_NUM_THREADS=$num_threads
+
+device=$host-mic0
+if [ "$machine" = "host" ] ; then
+	device=$host-ib
 fi
-
-if [ "$openmp" = "no" ]
-then
-    threading=singlethread
-    export OMP_NUM_THREADS=1
-else
-    threading=multithread
-fi
-
-
 
 
 LOGGING='tee logs/'$machine'_'$OMP_NUM_THREADS'_v'$version'.log'

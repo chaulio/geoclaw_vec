@@ -58,8 +58,12 @@ subroutine rpt2(ixy,imp,maxm,meqn,mwaves,maux,mbc,mx, &
     ! even though the arrays are really aligned
     !DIR$ VECTOR ALIGNED
 #endif
+#if defined(_OPENMP)
     !$OMP SIMD PRIVATE(hl,hr,hul,hur,hvl,hvr,s1,s2,s3, &
     !$OMP& dxdcm,dxdcp,delf1,delf2,delf3,topo1,topo3,beta,s,r)
+#else
+    !DIR$ SIMD
+#endif
     do i=2-mbc,mx+mbc
         hl=qr(i-1,1) 
         hr=ql(i,1) 
