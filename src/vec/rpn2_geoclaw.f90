@@ -105,7 +105,7 @@
       !DIR$ VECTOR ALIGNED 
 #endif
 #if defined(_OPENMP)
-      !$OMP SIMD PRIVATE(hL,hR,huL,huR,hvL,hvR,bL,bR, &
+      !$OMP SIMD PRIVATE(hL,hR,huL,huR,hvL,hvR,bL,bR,pL,pR, &
       !$OMP& fw11,fw12,fw13,fw21,fw22,fw23,fw31,fw32,fw33,sw1,sw2,sw3)
 #else
       !DIR$ SIMD
