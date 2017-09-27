@@ -1,13 +1,22 @@
 
-for machine in host mic
+# default values if not set:
+: ${machines:="host mic"}
+: ${versions:="1 2"}
+
+for machine in $machines 
 do
-	if [ "$machine" = "mic" ] ; then
-		num_threads_list="001 002 004 008 015 030 060 120"
+	# if $threads is not set, use these default values:
+	if [ -z "$threads" ] ; then
+		if [ "$machine" = "mic" ] ; then
+			num_threads_list="001 002 004 008 015 030 060 120"
+		else
+			num_threads_list="01 02 04 08 16 32"
+		fi
 	else
-		num_threads_list="01 02 04 08 16 32"
+		num_threads_list=$threads
 	fi
 
-	for version in 1 2
+	for version in $versions
 	do
 		for num_threads in $num_threads_list
 		do

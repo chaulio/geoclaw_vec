@@ -1,12 +1,16 @@
 WORKDIR=$HOME/geoclaw_vec/chile2010
 cd $WORKDIR
 
-flags="-fast -ipo -fopenmp -align array64byte -fp-model=precise "
-export FC=ifort
+# if these vars are not set, give them these default values:
+: ${FC:=ifort}
+: ${flags:="-fast -ipo -fopenmp -align array64byte -fp-model=precise "}
+: ${versions:="0 1 2"}
+: ${machines:="mic host"}
 
-for version in 1 2 ; do
-	for mic in yes no ; do
-		if [ "$mic" = "yes" ]
+
+for version in $versions ; do
+	for machine in $machines ; do
+		if [ "$machine" = "mic" ]
 		then
 			export FFLAGS="$flags -mmic"
 			machine=mic
