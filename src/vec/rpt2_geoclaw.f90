@@ -53,11 +53,6 @@ subroutine rpt2(ixy,imp,maxm,meqn,mwaves,maux,mbc,mx, &
         mv = 2
     endif
 
-#if !defined(__MIC__)
-    ! for some reason this causes runtime error on MICs,
-    ! even though the arrays are really aligned
-    !DIR$ VECTOR ALIGNED
-#endif
 #if defined(_OPENMP)
     !$OMP SIMD PRIVATE(hl,hr,hul,hur,hvl,hvr,s1,s2,s3, &
     !$OMP& dxdcm,dxdcp,delf1,delf2,delf3,topo1,topo3,beta,s,r)
