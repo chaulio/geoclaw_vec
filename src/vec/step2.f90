@@ -64,7 +64,7 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
     
     ! Looping scalar storage
     integer :: i,j,m,thread_num
-    real(kind=8) :: dtdx,dtdy,cfl1d,p,phi,cm,dtdxij,dtdyij
+    real(kind=8) :: dtdx,dtdy,cfl1d,p,phi,cm,dtdxij,dtdyij,cflgrid2
     
     ! Common block storage
     integer :: icom,jcom
@@ -74,6 +74,7 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
     logical, parameter :: relimit = .false.
 
     cflgrid = 0.d0
+    cflgrid2 = 0.d0
     dtdx = dt/dx
     dtdy = dt/dy
     
@@ -81,9 +82,15 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
     fp = 0.d0
     gm = 0.d0
     gp = 0.d0
-
+    
     ! ==========================================================================
     ! Perform X-Sweeps
+!$OMP   PARALLEL DO &
+!$OMP&  SCHEDULE (DYNAMIC,1) &
+!$OMP&  PRIVATE(i,j,m,jcom,dtdx1d,cfl1d)  &
+!$OMP&  PRIVATE(q1d,aux1,aux2,aux3,faddm,faddp,gaddm,gaddp) &
+!$OMP&  REDUCTION(max:cflgrid) &
+!$OMP&  DEFAULT(SHARED)
     do j = 0,my+1
 
         ! Copy old q into 1d slice
@@ -118,24 +125,36 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
         ! Compute modifications fadd and gadd to fluxes along this slice:
         call flux2(1,maxm,meqn,maux,mbc,mx,q1d,dtdx1d,aux1,aux2,aux3, &
                    faddm,faddp,gaddm,gaddp,cfl1d,rpn2,rpt2) 
-
+                   
         cflgrid = max(cflgrid,cfl1d)
-        ! write(53,*) 'x-sweep: ',cfl1d,cflgrid
 
         ! Update fluxes
         fm(:,1:mx+1,j) = fm(:,1:mx+1,j) + faddm(:,1:mx+1)
         fp(:,1:mx+1,j) = fp(:,1:mx+1,j) + faddp(:,1:mx+1)
+        !$OMP CRITICAL (x_gm)
         gm(:,1:mx+1,j) = gm(:,1:mx+1,j) + gaddm(:,1:mx+1,1)
-        gp(:,1:mx+1,j) = gp(:,1:mx+1,j) + gaddp(:,1:mx+1,1)
         gm(:,1:mx+1,j+1) = gm(:,1:mx+1,j+1) + gaddm(:,1:mx+1,2)
+        !$OMP END CRITICAL (x_gm)
+        !$OMP CRITICAL (x_gp)
+        gp(:,1:mx+1,j) = gp(:,1:mx+1,j) + gaddp(:,1:mx+1,1)
         gp(:,1:mx+1,j+1) = gp(:,1:mx+1,j+1) + gaddp(:,1:mx+1,2)
+        !$OMP END CRITICAL (x_gp)
+        
+        ! write(53,*) 'x-sweep: ',cfl1d,cflgrid
 
     enddo
-
+    
     ! ============================================================================
     !  y-sweeps    
     !
+!$OMP   PARALLEL DO &
+!$OMP&  SCHEDULE (DYNAMIC,1) &
+!$OMP&  PRIVATE(j,m,dtdy1d,cfl1d)  &
+!$OMP&  PRIVATE(q1d,aux1,aux2,aux3,faddm,faddp,gaddm,gaddp) &
+!$OMP&  REDUCTION(max:cflgrid2) &
+!$OMP&  DEFAULT(SHARED)
     do i = 0, mx+1
+    
         
         ! Copy data along a slice into 1d arrays:
         do j = 1-mbc, my+mbc
@@ -161,7 +180,7 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
                 enddo
             enddo
         endif
-        
+
         ! Store the value of i along this slice in the common block
         ! *** WARNING *** This may not working with threading
         icom = i
@@ -170,18 +189,24 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
         call flux2(2,maxm,meqn,maux,mbc,my,q1d,dtdy1d,aux1,aux2,aux3, &
                    faddm,faddp,gaddm,gaddp,cfl1d,rpn2,rpt2)
 
-        cflgrid = max(cflgrid,cfl1d)
+        cflgrid2 = max(cflgrid2,cfl1d)
         ! write(53,*) 'y-sweep: ',cfl1d,cflgrid
 
         ! Update fluxes
         gm(:,i,1:my+1) = gm(:,i,1:my+1) + faddm(:,1:my+1)
         gp(:,i,1:my+1) = gp(:,i,1:my+1) + faddp(:,1:my+1)
+        !$OMP CRITICAL (y_fm)
         fm(:,i,1:my+1) = fm(:,i,1:my+1) + gaddm(:,1:my+1,1)
-        fp(:,i,1:my+1) = fp(:,i,1:my+1) + gaddp(:,1:my+1,1)
         fm(:,i+1,1:my+1) = fm(:,i+1,1:my+1) + gaddm(:,1:my+1,2)
+        !$OMP END CRITICAL (y_fm)
+        !$OMP CRITICAL (y_fp)
+        fp(:,i,1:my+1) = fp(:,i,1:my+1) + gaddp(:,1:my+1,1)
         fp(:,i+1,1:my+1) = fp(:,i+1,1:my+1) + gaddp(:,1:my+1,2)
-
+        !$OMP END CRITICAL (y_fp) 
     end do
+    
+    ! get max value from X or Y sweeps
+    cflgrid = max(cflgrid, cflgrid2)
 
     ! Relimit correction fluxes if they drive a cell negative
     if (relimit) then
