@@ -7,6 +7,11 @@ CLAWMAKE = $(CLAW)/clawutil/src/Makefile.common
 #   make .help
 # at the unix prompt.
 
+NEWCODE = ../src
+VERSION?=0
+# 0 = original code (without statistics)
+# 1 = original code (with statistics)
+# 2 = vectorized code 
 
 # Adjust these variables if desired:
 # ----------------------------------
@@ -69,14 +74,23 @@ EXCLUDE_MODULES = \
 
 EXCLUDE_SOURCES = \
 
+ifeq ($(VERSION),1)
+EXCLUDE_SOURCES = \
+  $(GEOLIB)/amr2.f90 \
+
+endif
+
 # ----------------------------------------
 # List of custom sources for this program:
 # ----------------------------------------
 
 MODULES = \
  $(GEOLIB)/multilayer/gauges_module.f90 \
- ./qinit_module.f90
+ ./qinit_module.f90 \
+ $(NEWCODE)/statistics.f90 \
 
+# original code without statistics
+ifeq ($(VERSION),0)
 SOURCES = \
   ./qinit.f90 \
   $(GEOLIB)/multilayer/setaux.f90 \
@@ -88,7 +102,25 @@ SOURCES = \
   $(CLAW)/riemann/src/rpn2_layered_shallow_water.f90 \
   $(CLAW)/riemann/src/rpt2_layered_shallow_water.f90 \
   $(CLAW)/riemann/src/geoclaw_riemann_utils.f
+endif
 
+# original code WITH statistics
+ifeq ($(VERSION),1)
+SOURCES = \
+  ./qinit.f90 \
+  $(GEOLIB)/multilayer/setaux.f90 \
+  $(GEOLIB)/multilayer/b4step2.f90 \
+  $(GEOLIB)/multilayer/getmaxspeed.f90 \
+  $(GEOLIB)/multilayer/stepgrid.f \
+  $(GEOLIB)/multilayer/valout.f \
+  $(GEOLIB)/multilayer/src2.f90 \
+  $(CLAW)/riemann/src/geoclaw_riemann_utils.f \
+  $(NEWCODE)/timer/rpn2_layered_shallow_water.f90 \
+  $(NEWCODE)/timer/rpt2_layered_shallow_water.f90 \
+  $(NEWCODE)/timer/amr2.f90 \
+  
+endif
+  
 #-------------------------------------------------------------------
 # Include Makefile containing standard definitions and make options:
 include $(CLAWMAKE)
