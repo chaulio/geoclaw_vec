@@ -129,16 +129,29 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
         cflgrid = max(cflgrid,cfl1d)
 
         ! Update fluxes
+#if 0
         fm(:,1:mx+1,j) = fm(:,1:mx+1,j) + faddm(:,1:mx+1)
         fp(:,1:mx+1,j) = fp(:,1:mx+1,j) + faddp(:,1:mx+1)
-        !$OMP CRITICAL (x_gm)
         gm(:,1:mx+1,j) = gm(:,1:mx+1,j) + gaddm(:,1:mx+1,1)
         gm(:,1:mx+1,j+1) = gm(:,1:mx+1,j+1) + gaddm(:,1:mx+1,2)
-        !$OMP END CRITICAL (x_gm)
-        !$OMP CRITICAL (x_gp)
         gp(:,1:mx+1,j) = gp(:,1:mx+1,j) + gaddp(:,1:mx+1,1)
         gp(:,1:mx+1,j+1) = gp(:,1:mx+1,j+1) + gaddp(:,1:mx+1,2)
-        !$OMP END CRITICAL (x_gp)
+#else
+        do i=1,mx+1
+            do m = 1,meqn
+                fm(m,i,j) = fm(m,i,j) + faddm(m,i)
+                fp(m,i,j) = fp(m,i,j) + faddp(m,i)
+                !$omp atomic
+                gm(m,i,j) = gm(m,i,j) + gaddm(m,i,1)
+                !$omp atomic
+                gm(m,i,j+1) = gm(m,i,j+1) + gaddm(m,i,2)
+                !$omp atomic
+                gp(m,i,j) = gp(m,i,j) + gaddp(m,i,1)
+                !$omp atomic
+                gp(m,i,j+1) = gp(m,i,j+1) + gaddp(m,i,2)
+            end do
+        end do
+#endif
         
         ! write(53,*) 'x-sweep: ',cfl1d,cflgrid
 
@@ -193,16 +206,29 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
         ! write(53,*) 'y-sweep: ',cfl1d,cflgrid
 
         ! Update fluxes
+#if 0
         gm(:,i,1:my+1) = gm(:,i,1:my+1) + faddm(:,1:my+1)
         gp(:,i,1:my+1) = gp(:,i,1:my+1) + faddp(:,1:my+1)
-        !$OMP CRITICAL (y_fm)
         fm(:,i,1:my+1) = fm(:,i,1:my+1) + gaddm(:,1:my+1,1)
         fm(:,i+1,1:my+1) = fm(:,i+1,1:my+1) + gaddm(:,1:my+1,2)
-        !$OMP END CRITICAL (y_fm)
-        !$OMP CRITICAL (y_fp)
         fp(:,i,1:my+1) = fp(:,i,1:my+1) + gaddp(:,1:my+1,1)
         fp(:,i+1,1:my+1) = fp(:,i+1,1:my+1) + gaddp(:,1:my+1,2)
-        !$OMP END CRITICAL (y_fp) 
+#else
+        do j=1,my+1
+            do m = 1,meqn
+                gm(m,i,j) = gm(m,i,j) + faddm(m,j)
+                gp(m,i,j) = gp(m,i,j) + faddp(m,j)
+                !$omp atomic
+                fm(m,i,j) = fm(m,i,j) + gaddm(m,j,1)
+                !$omp atomic
+                fm(m,i+1,j) = fm(m,i+1,j) + gaddm(m,j,2)
+                !$omp atomic
+                fp(m,i,j) = fp(m,i,j) + gaddp(m,j,1)
+                !$omp atomic
+                fp(m,i+1,j) = fp(m,i+1,j) + gaddp(m,j,2)
+            end do
+        end do
+#endif
     end do
     
     ! get max value from X or Y sweeps
