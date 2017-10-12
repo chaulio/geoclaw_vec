@@ -24,9 +24,24 @@ WORKDIR=$HOME/geoclaw_vec/chile2010
 cd $WORKDIR
 
 python setrun.py
-mkdir -p logs
 
 export OMP_NUM_THREADS=$num_threads
+
+#unset KMP_AFFINITY
+export OMP_NESTED=TRUE
+export OMP_PROC_BIND=spread,close
+export OMP_PLACES=threads
+export OMP_DISPLAY_ENV=verbose
+export KMP_HOT_TEAMS_MODE=1
+export KMP_TEAMS_MAX_LEVEL=2
+export KMP_AFFINITY=verbose,$KMP_AFFINITY
+
+
+RUNDIR="run_"$machine"_"$num_threads"_v"$version
+mkdir -p $RUNDIR
+cd $RUNDIR
+python ../setrun.py
+
 
 device=$host-mic0
 if [ "$machine" = "host" ] ; then
@@ -34,12 +49,12 @@ if [ "$machine" = "host" ] ; then
 fi
 
 
-LOGGING='tee logs/'$machine'_'$OMP_NUM_THREADS'_v'$version'.log'
+LOGGING='tee '$WORKDIR'/logs/'$machine'_'$OMP_NUM_THREADS'_v'$version'.log'
 
-pwd | $LOGGING
-date | $LOGGING
+pwd 2>&1 | $LOGGING
+date 2>&1 | $LOGGING
 echo Host = $host-ib | $LOGGING
 echo MIC = $host-mic0 | $LOGGING
 
 
-mpiexec -host $device -n 1 ./xgeoclaw-$version.$machine | $LOGGING
+mpiexec -host $device -n 1 ../xgeoclaw-$version.$machine 2>&1 | $LOGGING
