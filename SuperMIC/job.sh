@@ -27,13 +27,13 @@ python setrun.py
 
 export OMP_NUM_THREADS=$num_threads
 
-#unset KMP_AFFINITY
-export OMP_NESTED=TRUE
-export OMP_PROC_BIND=spread,close
-export OMP_PLACES=threads
-export OMP_DISPLAY_ENV=verbose
-export KMP_HOT_TEAMS_MODE=1
-export KMP_TEAMS_MAX_LEVEL=2
+#env vars for nested OpenMP
+#export OMP_NESTED=TRUE
+#export OMP_PROC_BIND=spread,close
+#export OMP_PLACES=threads
+#export OMP_DISPLAY_ENV=verbose
+#export KMP_HOT_TEAMS_MODE=1
+#export KMP_TEAMS_MAX_LEVEL=2
 export KMP_AFFINITY=verbose,$KMP_AFFINITY
 
 

@@ -64,7 +64,7 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
     
     ! Looping scalar storage
     integer :: i,j,m,thread_num
-    real(kind=8) :: dtdx,dtdy,cfl1d,p,phi,cm,dtdxij,dtdyij,cflgrid2
+    real(kind=8) :: dtdx,dtdy,cfl1d,p,phi,cm,dtdxij,dtdyij
     
     ! Common block storage
     integer :: icom,jcom
@@ -74,7 +74,6 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
     logical, parameter :: relimit = .false.
 
     cflgrid = 0.d0
-    cflgrid2 = 0.d0
     dtdx = dt/dx
     dtdy = dt/dy
     
@@ -82,15 +81,9 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
     fp = 0.d0
     gm = 0.d0
     gp = 0.d0
-    
+
     ! ==========================================================================
     ! Perform X-Sweeps
-!$OMP   PARALLEL DO &
-!$OMP&  SCHEDULE (DYNAMIC,1) &
-!$OMP&  PRIVATE(i,j,m,jcom,dtdx1d,cfl1d)  &
-!$OMP&  PRIVATE(q1d,aux1,aux2,aux3,faddm,faddp,gaddm,gaddp) &
-!$OMP&  REDUCTION(max:cflgrid) &
-!$OMP&  DEFAULT(SHARED)
     do j = 0,my+1
 
         ! Copy old q into 1d slice
@@ -125,49 +118,24 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
         ! Compute modifications fadd and gadd to fluxes along this slice:
         call flux2(1,maxm,meqn,maux,mbc,mx,q1d,dtdx1d,aux1,aux2,aux3, &
                    faddm,faddp,gaddm,gaddp,cfl1d,rpn2,rpt2) 
-                   
+
         cflgrid = max(cflgrid,cfl1d)
+        ! write(53,*) 'x-sweep: ',cfl1d,cflgrid
 
         ! Update fluxes
-#if 0
         fm(:,1:mx+1,j) = fm(:,1:mx+1,j) + faddm(:,1:mx+1)
         fp(:,1:mx+1,j) = fp(:,1:mx+1,j) + faddp(:,1:mx+1)
         gm(:,1:mx+1,j) = gm(:,1:mx+1,j) + gaddm(:,1:mx+1,1)
-        gm(:,1:mx+1,j+1) = gm(:,1:mx+1,j+1) + gaddm(:,1:mx+1,2)
         gp(:,1:mx+1,j) = gp(:,1:mx+1,j) + gaddp(:,1:mx+1,1)
+        gm(:,1:mx+1,j+1) = gm(:,1:mx+1,j+1) + gaddm(:,1:mx+1,2)
         gp(:,1:mx+1,j+1) = gp(:,1:mx+1,j+1) + gaddp(:,1:mx+1,2)
-#else
-        do i=1,mx+1
-            do m = 1,meqn
-                fm(m,i,j) = fm(m,i,j) + faddm(m,i)
-                fp(m,i,j) = fp(m,i,j) + faddp(m,i)
-                !$omp atomic
-                gm(m,i,j) = gm(m,i,j) + gaddm(m,i,1)
-                !$omp atomic
-                gm(m,i,j+1) = gm(m,i,j+1) + gaddm(m,i,2)
-                !$omp atomic
-                gp(m,i,j) = gp(m,i,j) + gaddp(m,i,1)
-                !$omp atomic
-                gp(m,i,j+1) = gp(m,i,j+1) + gaddp(m,i,2)
-            end do
-        end do
-#endif
-        
-        ! write(53,*) 'x-sweep: ',cfl1d,cflgrid
 
     enddo
-    
+
     ! ============================================================================
     !  y-sweeps    
     !
-!$OMP   PARALLEL DO &
-!$OMP&  SCHEDULE (DYNAMIC,1) &
-!$OMP&  PRIVATE(j,m,dtdy1d,cfl1d)  &
-!$OMP&  PRIVATE(q1d,aux1,aux2,aux3,faddm,faddp,gaddm,gaddp) &
-!$OMP&  REDUCTION(max:cflgrid2) &
-!$OMP&  DEFAULT(SHARED)
     do i = 0, mx+1
-    
         
         ! Copy data along a slice into 1d arrays:
         do j = 1-mbc, my+mbc
@@ -193,7 +161,7 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
                 enddo
             enddo
         endif
-
+        
         ! Store the value of i along this slice in the common block
         ! *** WARNING *** This may not working with threading
         icom = i
@@ -202,37 +170,18 @@ subroutine step2(maxm,meqn,maux,mbc,mx,my, &
         call flux2(2,maxm,meqn,maux,mbc,my,q1d,dtdy1d,aux1,aux2,aux3, &
                    faddm,faddp,gaddm,gaddp,cfl1d,rpn2,rpt2)
 
-        cflgrid2 = max(cflgrid2,cfl1d)
+        cflgrid = max(cflgrid,cfl1d)
         ! write(53,*) 'y-sweep: ',cfl1d,cflgrid
 
         ! Update fluxes
-#if 0
         gm(:,i,1:my+1) = gm(:,i,1:my+1) + faddm(:,1:my+1)
         gp(:,i,1:my+1) = gp(:,i,1:my+1) + faddp(:,1:my+1)
         fm(:,i,1:my+1) = fm(:,i,1:my+1) + gaddm(:,1:my+1,1)
-        fm(:,i+1,1:my+1) = fm(:,i+1,1:my+1) + gaddm(:,1:my+1,2)
         fp(:,i,1:my+1) = fp(:,i,1:my+1) + gaddp(:,1:my+1,1)
+        fm(:,i+1,1:my+1) = fm(:,i+1,1:my+1) + gaddm(:,1:my+1,2)
         fp(:,i+1,1:my+1) = fp(:,i+1,1:my+1) + gaddp(:,1:my+1,2)
-#else
-        do j=1,my+1
-            do m = 1,meqn
-                gm(m,i,j) = gm(m,i,j) + faddm(m,j)
-                gp(m,i,j) = gp(m,i,j) + faddp(m,j)
-                !$omp atomic
-                fm(m,i,j) = fm(m,i,j) + gaddm(m,j,1)
-                !$omp atomic
-                fm(m,i+1,j) = fm(m,i+1,j) + gaddm(m,j,2)
-                !$omp atomic
-                fp(m,i,j) = fp(m,i,j) + gaddp(m,j,1)
-                !$omp atomic
-                fp(m,i+1,j) = fp(m,i+1,j) + gaddp(m,j,2)
-            end do
-        end do
-#endif
+
     end do
-    
-    ! get max value from X or Y sweeps
-    cflgrid = max(cflgrid, cflgrid2)
 
     ! Relimit correction fluxes if they drive a cell negative
     if (relimit) then
